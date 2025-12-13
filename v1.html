@@ -160,6 +160,7 @@
         <option value="a4">A4 (Portrait)</option>
         <option value="a3">A3 (Portrait)</option>
         <option value="a2">A2 (Portrait)</option>
+        <option value="a1">A1 (Portrait)</option>
         <option value="screen" selected>Screen (800x1000)</option>
       </select>
     </div>
@@ -257,6 +258,10 @@
         <label><input type="checkbox" id="effect-border" onchange="updateConfig()"> Border Patterns</label>
         <label><input type="checkbox" id="effect-noise" checked onchange="updateConfig()"> Background Noise</label>
       </div>
+      <label style="margin-top: 10px;">
+        Border Density <span class="value-display" id="border-density-val">50%</span>
+        <input type="range" id="border-density" min="0" max="100" value="50" oninput="updateConfig()">
+      </label>
     </div>
 
     <div class="control-group">
@@ -287,6 +292,7 @@
       clusterStrength: 0.4,
       positionDrift: 0.5,
       edgeBias: 0.5, // 0 = center, 1 = edge
+      borderDensity: 0.5,
       baseFontSize: 12,
       useSourceDoc: false,
       sourceText: '',
@@ -356,6 +362,9 @@
       } else if (mode === 'a2') {
         canvasWidth = 1191;
         canvasHeight = 1684;
+      } else if (mode === 'a1') {
+        canvasWidth = 1684;
+        canvasHeight = 2384;
       }
 
       resizeCanvas(canvasWidth, canvasHeight);
@@ -619,13 +628,22 @@
       noStroke();
       textSize(config.baseFontSize);
 
-      let numPatterns = floor(random(3, 8));
+      // Control number of repeating lines with borderDensity
+      // Map 0-1 to reasonable range, e.g., 2 to 30 lines
+      let numPatterns = floor(map(config.borderDensity, 0, 1, 2, 30));
 
       for (let i = 0; i < numPatterns; i++) {
         let y = random(50, height - 50);
         let isLeft = random() < 0.5;
         let char = randomChar(getActiveCharPool().join(''));
-        let len = floor(random(10, 50));
+
+        // Edge to edge logic
+        // If density is high, we might want some lines to be full width
+        // With higher density, we allow longer lines
+        let maxWidthChars = width / (config.baseFontSize * 0.6); // approx char width
+        let maxLen = map(config.borderDensity, 0, 1, 50, maxWidthChars);
+
+        let len = floor(random(10, maxLen));
 
         // Sometimes repeat a specific char sequence
         let chars = "";
@@ -633,10 +651,15 @@
 
         fill(0, random(180, 255));
 
-        if (isLeft) {
-          text(chars, len * config.baseFontSize * 0.3, y);
+        // If length is close to max width, center it? Or just draw from left?
+        if (len > maxWidthChars * 0.8) {
+          text(chars, width / 2, y); // Center if very long
         } else {
-          text(chars, width - (len * config.baseFontSize * 0.3), y);
+          if (isLeft) {
+            text(chars, len * config.baseFontSize * 0.3, y);
+          } else {
+            text(chars, width - (len * config.baseFontSize * 0.3), y);
+          }
         }
       }
     }
@@ -681,6 +704,7 @@
       config.clusterStrength = document.getElementById('cluster').value / 100;
       config.positionDrift = document.getElementById('drift').value / 100;
       config.edgeBias = document.getElementById('edgebias').value / 100;
+      config.borderDensity = document.getElementById('border-density').value / 100;
       config.baseFontSize = parseInt(document.getElementById('fontsize').value);
 
       // Update display values
@@ -695,6 +719,7 @@
       document.getElementById('drift-val').textContent = document.getElementById('drift').value + '%';
       document.getElementById('cluster-val').textContent = document.getElementById('cluster').value + '%';
       document.getElementById('edgebias-val').textContent = document.getElementById('edgebias').value + '%';
+      document.getElementById('border-density-val').textContent = document.getElementById('border-density').value + '%';
 
       // Update character sets from checkboxes
       config.charSets.latin = document.getElementById('set-latin').checked;
@@ -737,6 +762,7 @@
       document.getElementById('cluster').value = floor(random(0, 80));
       document.getElementById('drift').value = floor(random(0, 100));
       document.getElementById('edgebias').value = floor(random(0, 100));
+      document.getElementById('border-density').value = floor(random(0, 100));
       document.getElementById('fontsize').value = floor(random(8, 18));
 
       // Randomize some char sets
@@ -749,32 +775,32 @@
       const presets = {
         scan: {
           density: 35, corruption: 60, repHoriz: 30, repVert: 15, repDiag: 10, replength: 3, sizevar: 30,
-          cluster: 20, drift: 40, edgebias: 50, fontsize: 11,
+          cluster: 20, drift: 40, edgebias: 50, borderDensity: 40, fontsize: 11,
           scanlines: true, ghosting: false, blocks: true, border: false, noise: true
         },
         fax: {
           density: 50, corruption: 80, repHoriz: 40, repVert: 40, repDiag: 30, replength: 4, sizevar: 20,
-          cluster: 60, drift: 70, edgebias: 80, fontsize: 10,
+          cluster: 60, drift: 70, edgebias: 80, borderDensity: 80, fontsize: 10,
           scanlines: true, ghosting: true, blocks: false, border: true, noise: true
         },
         thermal: {
           density: 40, corruption: 50, repHoriz: 10, repVert: 20, repDiag: 5, replength: 3, sizevar: 40,
-          cluster: 30, drift: 20, edgebias: 20, fontsize: 9,
+          cluster: 30, drift: 20, edgebias: 20, borderDensity: 30, fontsize: 9,
           scanlines: false, ghosting: true, blocks: true, border: false, noise: false
         },
         ocr: {
           density: 60, corruption: 90, repHoriz: 15, repVert: 10, repDiag: 5, replength: 2, sizevar: 60,
-          cluster: 10, drift: 80, edgebias: 50, fontsize: 12,
+          cluster: 10, drift: 80, edgebias: 50, borderDensity: 50, fontsize: 12,
           scanlines: false, ghosting: false, blocks: false, border: false, noise: true
         },
         heavy: {
           density: 70, corruption: 95, repHoriz: 50, repVert: 50, repDiag: 50, replength: 6, sizevar: 80,
-          cluster: 70, drift: 90, edgebias: 50, fontsize: 14,
+          cluster: 70, drift: 90, edgebias: 50, borderDensity: 90, fontsize: 14,
           scanlines: true, ghosting: true, blocks: true, border: true, noise: true
         },
         subtle: {
           density: 20, corruption: 30, repHoriz: 5, repVert: 8, repDiag: 3, replength: 2, sizevar: 20,
-          cluster: 40, drift: 25, edgebias: 50, fontsize: 10,
+          cluster: 40, drift: 25, edgebias: 50, borderDensity: 20, fontsize: 10,
           scanlines: false, ghosting: false, blocks: false, border: false, noise: true
         }
       };
@@ -792,6 +818,7 @@
       document.getElementById('cluster').value = preset.cluster;
       document.getElementById('drift').value = preset.drift;
       document.getElementById('edgebias').value = preset.edgebias || 50;
+      document.getElementById('border-density').value = preset.borderDensity || 50;
       document.getElementById('fontsize').value = preset.fontsize;
 
       document.getElementById('effect-scanlines').checked = preset.scanlines;
