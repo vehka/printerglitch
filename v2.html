@@ -980,7 +980,10 @@
                 macroShapeMask.textFont("Special Elite");
 
                 // Calculate font size to fit the shape
-                let shapeSize = min(canvasWidth, canvasHeight) * config.macroShapeSize;
+                // Size 100% = edge-to-edge, Size 1% = 1% of that
+                // Multiply by ~1.4 to compensate for font metrics (baseline, ascender/descender spacing)
+                let targetSize = min(canvasWidth, canvasHeight) * config.macroShapeSize;
+                let shapeSize = targetSize * 1.4;
                 macroShapeMask.textSize(shapeSize);
 
                 // Draw the macro shape character
