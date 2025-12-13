@@ -180,8 +180,16 @@
     <div class="control-group">
       <h2>Repetition Effects</h2>
       <label>
-        Repetition Probability <span class="value-display" id="repetition-val">30%</span>
-        <input type="range" id="repetition" min="0" max="100" value="30" oninput="updateConfig()">
+        Horizontal Repetition <span class="value-display" id="rep-horiz-val">20%</span>
+        <input type="range" id="rep-horiz" min="0" max="100" value="20" oninput="updateConfig()">
+      </label>
+      <label>
+        Vertical Repetition <span class="value-display" id="rep-vert-val">20%</span>
+        <input type="range" id="rep-vert" min="0" max="100" value="20" oninput="updateConfig()">
+      </label>
+      <label>
+        Diagonal Repetition <span class="value-display" id="rep-diag-val">20%</span>
+        <input type="range" id="rep-diag" min="0" max="100" value="20" oninput="updateConfig()">
       </label>
       <label>
         Repetition Length <span class="value-display" id="replength-val">3</span>
@@ -244,7 +252,9 @@
 let config = {
   density: 0.3,
   corruptionLevel: 0.7,
-  repetitionProb: 0.3,
+  repetitionHoriz: 0.2,
+  repetitionVert: 0.2,
+  repetitionDiag: 0.2,
   repetitionLength: 3,
   sizeVariation: 0.5,
   clusterStrength: 0.4,
@@ -371,36 +381,44 @@ function generateRandomPositions() {
           size: config.baseFontSize * random(1 - config.sizeVariation, 1 + config.sizeVariation),
           opacity: random(180, 255)
         });
-        
-        // Maybe repeat this character
-        if (random() < config.repetitionProb) {
+
+        // Check for horizontal repetition
+        if (random() < config.repetitionHoriz) {
           let repeatCount = floor(random(2, config.repetitionLength + 1));
-          let repeatDir = floor(random(4)); // 0=right, 1=down, 2=diagonal-right, 3=diagonal-left
-          
           for (let r = 1; r <= repeatCount; r++) {
-            let offsetX = 0, offsetY = 0;
-            
-            switch(repeatDir) {
-              case 0: // horizontal right
-                offsetX = r * gridSpacing * 0.8;
-                break;
-              case 1: // vertical down
-                offsetY = r * gridSpacing * 0.8;
-                break;
-              case 2: // diagonal down-right
-                offsetX = r * gridSpacing * 0.6;
-                offsetY = r * gridSpacing * 0.6;
-                break;
-              case 3: // diagonal down-left
-                offsetX = -r * gridSpacing * 0.6;
-                offsetY = r * gridSpacing * 0.6;
-                break;
-            }
-            
             positions.push({
-              x: x + driftX + offsetX,
-              y: y + driftY + offsetY,
-              char: char, // Same character
+              x: x + driftX + r * gridSpacing * 0.8,
+              y: y + driftY,
+              char: char,
+              size: config.baseFontSize * random(1 - config.sizeVariation * 0.5, 1 + config.sizeVariation * 0.5),
+              opacity: random(150, 255)
+            });
+          }
+        }
+
+        // Check for vertical repetition
+        if (random() < config.repetitionVert) {
+          let repeatCount = floor(random(2, config.repetitionLength + 1));
+          for (let r = 1; r <= repeatCount; r++) {
+            positions.push({
+              x: x + driftX,
+              y: y + driftY + r * gridSpacing * 0.8,
+              char: char,
+              size: config.baseFontSize * random(1 - config.sizeVariation * 0.5, 1 + config.sizeVariation * 0.5),
+              opacity: random(150, 255)
+            });
+          }
+        }
+
+        // Check for diagonal repetition
+        if (random() < config.repetitionDiag) {
+          let repeatCount = floor(random(2, config.repetitionLength + 1));
+          let diagDir = random() < 0.5 ? 1 : -1; // down-right or down-left
+          for (let r = 1; r <= repeatCount; r++) {
+            positions.push({
+              x: x + driftX + diagDir * r * gridSpacing * 0.6,
+              y: y + driftY + r * gridSpacing * 0.6,
+              char: char,
               size: config.baseFontSize * random(1 - config.sizeVariation * 0.5, 1 + config.sizeVariation * 0.5),
               opacity: random(150, 255)
             });
@@ -580,7 +598,9 @@ function updateConfig() {
   // Update numeric values from sliders
   config.density = document.getElementById('density').value / 100;
   config.corruptionLevel = document.getElementById('corruption').value / 100;
-  config.repetitionProb = document.getElementById('repetition').value / 100;
+  config.repetitionHoriz = document.getElementById('rep-horiz').value / 100;
+  config.repetitionVert = document.getElementById('rep-vert').value / 100;
+  config.repetitionDiag = document.getElementById('rep-diag').value / 100;
   config.repetitionLength = parseInt(document.getElementById('replength').value);
   config.sizeVariation = document.getElementById('sizevar').value / 100;
   config.clusterStrength = document.getElementById('cluster').value / 100;
@@ -590,7 +610,9 @@ function updateConfig() {
   // Update display values
   document.getElementById('density-val').textContent = document.getElementById('density').value + '%';
   document.getElementById('corruption-val').textContent = document.getElementById('corruption').value + '%';
-  document.getElementById('repetition-val').textContent = document.getElementById('repetition').value + '%';
+  document.getElementById('rep-horiz-val').textContent = document.getElementById('rep-horiz').value + '%';
+  document.getElementById('rep-vert-val').textContent = document.getElementById('rep-vert').value + '%';
+  document.getElementById('rep-diag-val').textContent = document.getElementById('rep-diag').value + '%';
   document.getElementById('replength-val').textContent = document.getElementById('replength').value;
   document.getElementById('fontsize-val').textContent = document.getElementById('fontsize').value;
   document.getElementById('sizevar-val').textContent = document.getElementById('sizevar').value + '%';
@@ -627,7 +649,9 @@ function saveImage() {
 function randomize() {
   document.getElementById('density').value = floor(random(10, 80));
   document.getElementById('corruption').value = floor(random(30, 100));
-  document.getElementById('repetition').value = floor(random(10, 80));
+  document.getElementById('rep-horiz').value = floor(random(0, 60));
+  document.getElementById('rep-vert').value = floor(random(0, 60));
+  document.getElementById('rep-diag').value = floor(random(0, 60));
   document.getElementById('replength').value = floor(random(2, 8));
   document.getElementById('sizevar').value = floor(random(0, 100));
   document.getElementById('cluster').value = floor(random(0, 80));
@@ -640,32 +664,32 @@ function randomize() {
 function loadPreset(presetName) {
   const presets = {
     scan: {
-      density: 35, corruption: 60, repetition: 20, replength: 3, sizevar: 30,
+      density: 35, corruption: 60, repHoriz: 30, repVert: 15, repDiag: 10, replength: 3, sizevar: 30,
       cluster: 20, drift: 40, fontsize: 11,
       scanlines: true, ghosting: false, blocks: true, barcode: false, noise: true
     },
     fax: {
-      density: 50, corruption: 80, repetition: 40, replength: 4, sizevar: 20,
+      density: 50, corruption: 80, repHoriz: 40, repVert: 40, repDiag: 30, replength: 4, sizevar: 20,
       cluster: 60, drift: 70, fontsize: 10,
       scanlines: true, ghosting: true, blocks: false, barcode: true, noise: true
     },
     thermal: {
-      density: 40, corruption: 50, repetition: 15, replength: 3, sizevar: 40,
+      density: 40, corruption: 50, repHoriz: 10, repVert: 20, repDiag: 5, replength: 3, sizevar: 40,
       cluster: 30, drift: 20, fontsize: 9,
       scanlines: false, ghosting: true, blocks: true, barcode: false, noise: false
     },
     ocr: {
-      density: 60, corruption: 90, repetition: 10, replength: 2, sizevar: 60,
+      density: 60, corruption: 90, repHoriz: 15, repVert: 10, repDiag: 5, replength: 2, sizevar: 60,
       cluster: 10, drift: 80, fontsize: 12,
       scanlines: false, ghosting: false, blocks: false, barcode: false, noise: true
     },
     heavy: {
-      density: 70, corruption: 95, repetition: 60, replength: 6, sizevar: 80,
+      density: 70, corruption: 95, repHoriz: 50, repVert: 50, repDiag: 50, replength: 6, sizevar: 80,
       cluster: 70, drift: 90, fontsize: 14,
       scanlines: true, ghosting: true, blocks: true, barcode: true, noise: true
     },
     subtle: {
-      density: 20, corruption: 30, repetition: 10, replength: 2, sizevar: 20,
+      density: 20, corruption: 30, repHoriz: 5, repVert: 8, repDiag: 3, replength: 2, sizevar: 20,
       cluster: 40, drift: 25, fontsize: 10,
       scanlines: false, ghosting: false, blocks: false, barcode: false, noise: true
     }
@@ -676,7 +700,9 @@ function loadPreset(presetName) {
 
   document.getElementById('density').value = preset.density;
   document.getElementById('corruption').value = preset.corruption;
-  document.getElementById('repetition').value = preset.repetition;
+  document.getElementById('rep-horiz').value = preset.repHoriz;
+  document.getElementById('rep-vert').value = preset.repVert;
+  document.getElementById('rep-diag').value = preset.repDiag;
   document.getElementById('replength').value = preset.replength;
   document.getElementById('sizevar').value = preset.sizevar;
   document.getElementById('cluster').value = preset.cluster;
