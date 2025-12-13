@@ -1,48 +1,56 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Analog Glitch Art Generator</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.7.0/p5.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Special+Elite&display=swap" rel="stylesheet">
   <style>
     body {
       margin: 0;
       padding: 20px;
-      font-family: 'Courier New', monospace;
+      font-family: 'Special Elite', 'Courier New', monospace;
       background: #1a1a1a;
       color: #ffffff;
       display: flex;
       gap: 20px;
     }
-    
+
     #canvas-container {
       flex: 1;
       background: white;
-      box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      overflow: auto;
     }
-    
+
     #controls {
       width: 320px;
       background: #2a2a2a;
       padding: 20px;
       border-radius: 8px;
-      box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
       height: fit-content;
       max-height: 90vh;
       overflow-y: auto;
     }
-    
+
     .control-group {
       margin-bottom: 20px;
       padding-bottom: 15px;
       border-bottom: 1px solid #444;
     }
-    
+
     .control-group:last-child {
       border-bottom: none;
     }
-    
+
     h2 {
       margin: 0 0 15px 0;
       font-size: 14px;
@@ -50,23 +58,23 @@
       color: #888;
       letter-spacing: 1px;
     }
-    
+
     label {
       display: block;
       margin-bottom: 8px;
       font-size: 12px;
       color: #aaa;
     }
-    
+
     input[type="range"] {
       width: 100%;
       margin-bottom: 5px;
     }
-    
+
     input[type="checkbox"] {
       margin-right: 8px;
     }
-    
+
     button {
       width: 100%;
       padding: 12px;
@@ -74,77 +82,88 @@
       background: #4a9eff;
       border: none;
       color: white;
-      font-family: 'Courier New', monospace;
+      font-family: 'Special Elite', 'Courier New', monospace;
       font-size: 13px;
       cursor: pointer;
       border-radius: 4px;
       transition: background 0.2s;
     }
-    
+
     button:hover {
       background: #357abd;
     }
-    
+
     button.secondary {
       background: #555;
     }
-    
+
     button.secondary:hover {
       background: #666;
     }
-    
+
     .value-display {
       float: right;
       color: #4a9eff;
       font-weight: bold;
     }
-    
+
     textarea {
       width: 100%;
       height: 100px;
       background: #1a1a1a;
       border: 1px solid #444;
       color: #fff;
-      font-family: 'Courier New', monospace;
+      font-family: 'Special Elite', 'Courier New', monospace;
       font-size: 11px;
       padding: 8px;
       box-sizing: border-box;
       resize: vertical;
     }
-    
+
     .checkbox-group {
       margin: 8px 0;
     }
-    
+
     select {
       width: 100%;
       padding: 8px;
       background: #1a1a1a;
       border: 1px solid #444;
       color: #fff;
-      font-family: 'Courier New', monospace;
+      font-family: 'Special Elite', 'Courier New', monospace;
       font-size: 12px;
       margin-bottom: 10px;
     }
-    
+
     #preset-buttons {
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 5px;
       margin-top: 10px;
     }
-    
+
     #preset-buttons button {
       padding: 8px;
       font-size: 11px;
     }
   </style>
 </head>
+
 <body>
   <div id="canvas-container"></div>
   <div id="controls">
     <h1 style="margin-top: 0; font-size: 18px;">Analog Glitch Art</h1>
-    
+
+    <div class="control-group">
+      <h2>Canvas Settings</h2>
+      <select id="canvas-size" onchange="updateCanvasSize()">
+        <option value="a4">A4 (Portrait)</option>
+        <option value="a3">A3 (Portrait)</option>
+        <option value="a2">A2 (Portrait)</option>
+        <option value="screen" selected>Screen (800x1000)</option>
+      </select>
+    </div>
+
     <div class="control-group">
       <h2>Presets</h2>
       <div id="preset-buttons">
@@ -156,7 +175,7 @@
         <button class="secondary" onclick="loadPreset('subtle')">Subtle Noise</button>
       </div>
     </div>
-    
+
     <div class="control-group">
       <h2>Character Settings</h2>
       <label>
@@ -176,7 +195,7 @@
         <input type="range" id="sizevar" min="0" max="100" value="50" oninput="updateConfig()">
       </label>
     </div>
-    
+
     <div class="control-group">
       <h2>Repetition Effects</h2>
       <label>
@@ -207,8 +226,12 @@
         Cluster Strength <span class="value-display" id="cluster-val">40%</span>
         <input type="range" id="cluster" min="0" max="100" value="40" oninput="updateConfig()">
       </label>
+      <label>
+        Edge Bias (Center ↔ Edge) <span class="value-display" id="edgebias-val">50%</span>
+        <input type="range" id="edgebias" min="0" max="100" value="50" oninput="updateConfig()">
+      </label>
     </div>
-    
+
     <div class="control-group">
       <h2>Character Sets</h2>
       <div class="checkbox-group">
@@ -218,20 +241,24 @@
         <label><input type="checkbox" id="set-cyrillic" onchange="updateConfig()"> Cyrillic</label>
         <label><input type="checkbox" id="set-special" onchange="updateConfig()"> Special Unicode</label>
         <label><input type="checkbox" id="set-corruption" checked onchange="updateConfig()"> Box Characters</label>
+        <label><input type="checkbox" id="set-walls" checked onchange="updateConfig()"> Walls (Lines)</label>
+        <label><input type="checkbox" id="set-custom" onchange="updateConfig()"> Custom:</label>
+        <input type="text" id="custom-chars" placeholder="Enter custom chars" oninput="updateConfig()"
+          style="width: 100%; margin-top: 5px; background: #333; border: 1px solid #555; color: white; padding: 4px;">
       </div>
     </div>
-    
+
     <div class="control-group">
       <h2>Glitch Effects</h2>
       <div class="checkbox-group">
         <label><input type="checkbox" id="effect-scanlines" checked onchange="updateConfig()"> Scan Lines</label>
         <label><input type="checkbox" id="effect-ghosting" checked onchange="updateConfig()"> Character Ghosting</label>
         <label><input type="checkbox" id="effect-blocks" checked onchange="updateConfig()"> Compression Blocks</label>
-        <label><input type="checkbox" id="effect-barcode" onchange="updateConfig()"> Barcode Pattern</label>
+        <label><input type="checkbox" id="effect-border" onchange="updateConfig()"> Border Patterns</label>
         <label><input type="checkbox" id="effect-noise" checked onchange="updateConfig()"> Background Noise</label>
       </div>
     </div>
-    
+
     <div class="control-group">
       <h2>Source Document (Optional)</h2>
       <div class="checkbox-group">
@@ -239,7 +266,7 @@
       </div>
       <textarea id="source-text" placeholder="Paste text here to glitch an actual document..."></textarea>
     </div>
-    
+
     <div class="control-group">
       <button onclick="regenerate()">⟳ Regenerate</button>
       <button onclick="saveImage()" class="secondary">💾 Save Image</button>
@@ -249,475 +276,536 @@
   <script>
 
     // Configuration object
-let config = {
-  density: 0.3,
-  corruptionLevel: 0.7,
-  repetitionHoriz: 0.2,
-  repetitionVert: 0.2,
-  repetitionDiag: 0.2,
-  repetitionLength: 3,
-  sizeVariation: 0.5,
-  clusterStrength: 0.4,
-  positionDrift: 0.5,
-  baseFontSize: 12,
-  useSourceDoc: false,
-  sourceText: '',
-  charSets: {
-    latin: true,
-    numbers: true,
-    symbols: true,
-    cyrillic: false,
-    special: false,
-    corruption: true
-  },
-  effects: {
-    scanlines: true,
-    ghosting: true,
-    blocks: true,
-    barcode: false,
-    noise: true
-  }
-};
+    let config = {
+      density: 0.3,
+      corruptionLevel: 0.7,
+      repetitionHoriz: 0.2,
+      repetitionVert: 0.2,
+      repetitionDiag: 0.2,
+      repetitionLength: 3,
+      sizeVariation: 0.5,
+      clusterStrength: 0.4,
+      positionDrift: 0.5,
+      edgeBias: 0.5, // 0 = center, 1 = edge
+      baseFontSize: 12,
+      useSourceDoc: false,
+      sourceText: '',
+      charSets: {
+        latin: true,
+        numbers: true,
+        symbols: true,
+        cyrillic: false,
+        special: false,
+        corruption: true,
+        walls: true,
+        custom: false,
+        customChars: ''
+      },
+      effects: {
+        scanlines: true,
+        ghosting: true,
+        blocks: true,
+        border: false,
+        noise: true
+      }
+    };
 
-// Character set definitions
-const charSets = {
-  latin: 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz',
-  numbers: '0123456789',
-  symbols: '!@#$%^&*(){}[]|\\/<>~`-_=+;:\'",.',
-  cyrillic: 'АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯабвгдеёжзийклмнопрстуфхцчшщъыьэюя',
-  special: '→←↑↓∞≈≠±×÷§¶†‡©®™€£¥¢°•·…""\'\'—–',
-  corruption: '▓▒░█▄▀■□●○◆◇▪▫'
-};
+    // Character set definitions
+    const charSets = {
+      latin: 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz',
+      numbers: '0123456789',
+      symbols: '!@#$%^&*(){}[]|\\/<>~`-_=+;:\'",.',
+      cyrillic: 'АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯабвгдеёжзийклмнопрстуфхцчшщъыьэюя',
+      special: '→←↑↓∞≈≠±×÷§¶†‡©®™€£¥¢°•·…""\'\'—–',
+      corruption: '▓▒░█▄▀■□●○◆◇▪▫',
+      walls: '║│┃│▐▍▎▏▌│║│┃│┌┐└┘╔╗╚╝╠╣╦╩╬┼═─'
+    };
 
-function randomChar(str) {
-  return str.charAt(floor(random(str.length)));
-}
+    function randomChar(str) {
+      return str.charAt(floor(random(str.length)));
+    }
 
-let glitchPositions = [];
-let canvasWidth = 800;
-let canvasHeight = 1000;
+    let glitchPositions = [];
+    let canvasWidth = 800;
+    let canvasHeight = 1000;
 
-function setup() {
-  let canvas = createCanvas(canvasWidth, canvasHeight);
-  canvas.parent('canvas-container');
-  textFont('Courier New');
+    function setup() {
+      let canvas = createCanvas(canvasWidth, canvasHeight);
+      canvas.parent('canvas-container');
+      textFont('Special Elite');
 
-  regenerate();
-}
+      regenerate();
+    }
 
-function draw() {
-  // Static image - only redraw when regenerate is called
-}
+    function draw() {
+      // Static image - only redraw when regenerate is called
+    }
 
-function regenerate() {
-  background(255);
-  
-  // Add background noise if enabled
-  if (config.effects.noise) {
-    drawBackgroundNoise();
-  }
-  
-  // Generate positions
-  glitchPositions = config.useSourceDoc ? 
-    generateFromSource() : 
-    generateRandomPositions();
-  
-  // Draw ghosting layer first (behind main characters)
-  if (config.effects.ghosting) {
-    drawGhosting();
-  }
-  
-  // Draw main characters
-  drawCharacters();
-  
-  // Apply effects on top
-  if (config.effects.scanlines) {
-    drawScanlines();
-  }
-  
-  if (config.effects.blocks) {
-    drawCompressionBlocks();
-  }
-  
-  if (config.effects.barcode) {
-    drawBarcodePattern();
-  }
-}
+    window.updateCanvasSize = function () {
+      let mode = document.getElementById('canvas-size').value;
 
-function generateRandomPositions() {
-  let positions = [];
-  let charPool = getActiveCharPool();
-  
-  if (charPool.length === 0) {
-    charPool = ['X']; // Fallback if no sets selected
-  }
-  
-  // Use noise-based density for clustering
-  noiseSeed(random(10000));
-  
-  let gridSpacing = config.baseFontSize * 1.2;
-  
-  for (let y = 0; y < height; y += gridSpacing) {
-    for (let x = 0; x < width; x += gridSpacing) {
-      
-      // Noise-based density variation
-      let noiseVal = noise(x * 0.005, y * 0.005);
-      let densityThreshold = 1 - config.density;
-      
-      // Apply cluster strength
-      let clusterMod = map(config.clusterStrength, 0, 1, 0.5, 1.5);
-      noiseVal = pow(noiseVal, clusterMod);
-      
-      if (noiseVal > densityThreshold) {
-        let driftX = randomGaussian(0, config.positionDrift * 15);
-        let driftY = randomGaussian(0, config.positionDrift * 8);
-        
-        let char = randomChar(charPool.join(''));
-        
+      if (mode === 'screen') {
+        canvasWidth = 800;
+        canvasHeight = 1000;
+      } else if (mode === 'a4') {
+        canvasWidth = 595;
+        canvasHeight = 842;
+      } else if (mode === 'a3') {
+        canvasWidth = 842;
+        canvasHeight = 1191;
+      } else if (mode === 'a2') {
+        canvasWidth = 1191;
+        canvasHeight = 1684;
+      }
+
+      resizeCanvas(canvasWidth, canvasHeight);
+      regenerate();
+    }
+
+    function regenerate() {
+      background(255);
+
+      // Add background noise if enabled
+      if (config.effects.noise) {
+        drawBackgroundNoise();
+      }
+
+      // Generate positions
+      glitchPositions = config.useSourceDoc ?
+        generateFromSource() :
+        generateRandomPositions();
+
+      // Draw ghosting layer first (behind main characters)
+      if (config.effects.ghosting) {
+        drawGhosting();
+      }
+
+      // Draw main characters
+      drawCharacters();
+
+      // Apply effects on top
+      if (config.effects.scanlines) {
+        drawScanlines();
+      }
+
+      if (config.effects.blocks) {
+        drawCompressionBlocks();
+      }
+
+      if (config.effects.border) {
+        drawBorderPattern();
+      }
+    }
+
+    function generateRandomPositions() {
+      let positions = [];
+      let charPool = getActiveCharPool();
+
+      if (charPool.length === 0) {
+        charPool = ['X']; // Fallback if no sets selected
+      }
+
+      // Use noise-based density for clustering
+      noiseSeed(random(10000));
+
+      let gridSpacing = config.baseFontSize * 1.2;
+
+      for (let y = 0; y < height; y += gridSpacing) {
+
+        for (let x = 0; x < width; x += gridSpacing) {
+
+          // Noise-based density variation
+          let noiseVal = noise(x * 0.005, y * 0.005);
+
+          // Apply Edge Bias
+          let normalizedX = x / width;
+          let distFromCenter = abs(normalizedX - 0.5) * 2; // 0 at center, 1 at edges
+
+          let biasFactor = 1;
+          if (config.edgeBias > 0.5) {
+            let strength = map(config.edgeBias, 0.5, 1, 0, 1);
+            biasFactor = map(distFromCenter, 0, 1, 1 - strength, 1 + strength);
+          } else {
+            let strength = map(config.edgeBias, 0.5, 0, 0, 1);
+            biasFactor = map(distFromCenter, 0, 1, 1 + strength, 1 - strength);
+          }
+
+          noiseVal *= biasFactor;
+
+          let densityThreshold = 1 - config.density;
+
+          // Apply cluster strength
+          let clusterMod = map(config.clusterStrength, 0, 1, 0.5, 1.5);
+          noiseVal = pow(noiseVal, clusterMod);
+
+          if (noiseVal > densityThreshold) {
+            let driftX = randomGaussian(0, config.positionDrift * 15);
+            let driftY = randomGaussian(0, config.positionDrift * 8);
+
+            let char = randomChar(charPool.join(''));
+
+            positions.push({
+              x: x + driftX,
+              y: y + driftY,
+              char: char,
+              size: config.baseFontSize * random(1 - config.sizeVariation, 1 + config.sizeVariation),
+              opacity: random(180, 255)
+            });
+
+            // Repetition logic...
+            if (random() < config.repetitionHoriz) {
+              let repeatCount = floor(random(2, config.repetitionLength + 1));
+              for (let r = 1; r <= repeatCount; r++) {
+                positions.push({
+                  x: x + driftX + r * gridSpacing * 0.8,
+                  y: y + driftY,
+                  char: char,
+                  size: config.baseFontSize * random(1 - config.sizeVariation * 0.5, 1 + config.sizeVariation * 0.5),
+                  opacity: random(150, 255)
+                });
+              }
+            }
+
+            if (random() < config.repetitionVert) {
+              let repeatCount = floor(random(2, config.repetitionLength + 1));
+              for (let r = 1; r <= repeatCount; r++) {
+                positions.push({
+                  x: x + driftX,
+                  y: y + driftY + r * gridSpacing * 0.8,
+                  char: char,
+                  size: config.baseFontSize * random(1 - config.sizeVariation * 0.5, 1 + config.sizeVariation * 0.5),
+                  opacity: random(150, 255)
+                });
+              }
+            }
+
+            if (random() < config.repetitionDiag) {
+              let repeatCount = floor(random(2, config.repetitionLength + 1));
+              let diagDir = random() < 0.5 ? 1 : -1;
+              for (let r = 1; r <= repeatCount; r++) {
+                positions.push({
+                  x: x + driftX + diagDir * r * gridSpacing * 0.6,
+                  y: y + driftY + r * gridSpacing * 0.6,
+                  char: char,
+                  size: config.baseFontSize * random(1 - config.sizeVariation * 0.5, 1 + config.sizeVariation * 0.5),
+                  opacity: random(150, 255)
+                });
+              }
+            }
+          }
+        }
+      }
+
+      return positions;
+    }
+
+    function generateFromSource() {
+      let positions = [];
+      let charPool = getActiveCharPool();
+      let text = config.sourceText || "NO SOURCE TEXT PROVIDED";
+      let chars = text.split('');
+
+      let x = 50;
+      let y = 50;
+      let lineHeight = config.baseFontSize * 1.8;
+      let charWidth = config.baseFontSize * 0.7;
+
+      for (let i = 0; i < chars.length; i++) {
+        let char = chars[i];
+
+        if (char === '\n') {
+          x = 50;
+          y += lineHeight;
+          continue;
+        }
+
+        if (random() < config.corruptionLevel) {
+          char = random(charPool);
+        }
+
+        let driftX = randomGaussian(0, config.corruptionLevel * 20);
+        let driftY = randomGaussian(0, config.corruptionLevel * 10);
+
         positions.push({
           x: x + driftX,
           y: y + driftY,
           char: char,
-          size: config.baseFontSize * random(1 - config.sizeVariation, 1 + config.sizeVariation),
-          opacity: random(180, 255)
+          size: config.baseFontSize * random(1 - config.sizeVariation * 0.5,
+            1 + config.sizeVariation * 0.5),
+          opacity: random(150, 255)
         });
 
-        // Check for horizontal repetition
-        if (random() < config.repetitionHoriz) {
-          let repeatCount = floor(random(2, config.repetitionLength + 1));
-          for (let r = 1; r <= repeatCount; r++) {
-            positions.push({
-              x: x + driftX + r * gridSpacing * 0.8,
-              y: y + driftY,
-              char: char,
-              size: config.baseFontSize * random(1 - config.sizeVariation * 0.5, 1 + config.sizeVariation * 0.5),
-              opacity: random(150, 255)
-            });
-          }
+        x += charWidth;
+
+        if (x > width - 100) {
+          x = 50;
+          y += lineHeight;
         }
 
-        // Check for vertical repetition
-        if (random() < config.repetitionVert) {
-          let repeatCount = floor(random(2, config.repetitionLength + 1));
-          for (let r = 1; r <= repeatCount; r++) {
-            positions.push({
-              x: x + driftX,
-              y: y + driftY + r * gridSpacing * 0.8,
-              char: char,
-              size: config.baseFontSize * random(1 - config.sizeVariation * 0.5, 1 + config.sizeVariation * 0.5),
-              opacity: random(150, 255)
-            });
-          }
-        }
-
-        // Check for diagonal repetition
-        if (random() < config.repetitionDiag) {
-          let repeatCount = floor(random(2, config.repetitionLength + 1));
-          let diagDir = random() < 0.5 ? 1 : -1; // down-right or down-left
-          for (let r = 1; r <= repeatCount; r++) {
-            positions.push({
-              x: x + driftX + diagDir * r * gridSpacing * 0.6,
-              y: y + driftY + r * gridSpacing * 0.6,
-              char: char,
-              size: config.baseFontSize * random(1 - config.sizeVariation * 0.5, 1 + config.sizeVariation * 0.5),
-              opacity: random(150, 255)
-            });
-          }
+        if (y > height - 50) {
+          break;
         }
       }
-    }
-  }
-  
-  return positions;
-}
 
-function generateFromSource() {
-  let positions = [];
-  let charPool = getActiveCharPool();
-  let text = config.sourceText || "NO SOURCE TEXT PROVIDED";
-  let chars = text.split('');
-  
-  let x = 50;
-  let y = 50;
-  let lineHeight = config.baseFontSize * 1.8;
-  let charWidth = config.baseFontSize * 0.7;
-  
-  for (let i = 0; i < chars.length; i++) {
-    let char = chars[i];
-    
-    // Handle newlines
-    if (char === '\n') {
-      x = 50;
-      y += lineHeight;
-      continue;
+      return positions;
     }
-    
-    // Maybe corrupt the character
-    if (random() < config.corruptionLevel) {
-      char = random(charPool);
-    }
-    
-    let driftX = randomGaussian(0, config.corruptionLevel * 20);
-    let driftY = randomGaussian(0, config.corruptionLevel * 10);
 
-    positions.push({
-      x: x + driftX,
-      y: y + driftY,
-      char: char,
-      size: config.baseFontSize * random(1 - config.sizeVariation * 0.5,
-                                          1 + config.sizeVariation * 0.5),
-      opacity: random(150, 255)
-    });
-    
-    x += charWidth;
-    
-    // Wrap at edge
-    if (x > width - 100) {
-      x = 50;
-      y += lineHeight;
-    }
-    
-    // Stop if we go off bottom
-    if (y > height - 50) {
-      break;
-    }
-  }
-  
-  return positions;
-}
+    function drawCharacters() {
+      fill(0);
+      noStroke();
 
-function drawCharacters() {
-  fill(0);
-  noStroke();
-  
-  for (let p of glitchPositions) {
-    push();
-    translate(p.x, p.y);
-    textSize(p.size);
-    fill(0, p.opacity);
-    textAlign(CENTER, CENTER);
-    text(p.char, 0, 0);
-    pop();
-  }
-}
-
-function drawGhosting() {
-  fill(0, 50);
-  noStroke();
-  
-  for (let p of glitchPositions) {
-    if (random() < 0.15) {
-      let ghostCount = floor(random(1, 4));
-      for (let i = 0; i < ghostCount; i++) {
+      for (let p of glitchPositions) {
         push();
-        translate(p.x + random(-5, 5), p.y + random(-5, 5));
+        translate(p.x, p.y);
         textSize(p.size);
+        fill(0, p.opacity);
         textAlign(CENTER, CENTER);
         text(p.char, 0, 0);
         pop();
       }
     }
-  }
-}
 
-function drawScanlines() {
-  stroke(0, random(20, 40));
-  strokeWeight(random(0.5, 1.5));
-  
-  for (let y = 0; y < height; y += random(3, 12)) {
-    let x1 = random(-20, 0);
-    let x2 = width + random(0, 20);
-    line(x1, y, x2, y);
-  }
-}
+    function drawGhosting() {
+      fill(0, 50);
+      noStroke();
 
-function drawCompressionBlocks() {
-  noStroke();
-  
-  for (let i = 0; i < 30; i++) {
-    fill(0, random(10, 50));
-    let w = random(10, 80);
-    let h = random(5, 30);
-    rect(random(width - w), random(height - h), w, h);
-  }
-  
-  // Some white blocks too
-  for (let i = 0; i < 15; i++) {
-    fill(255, random(100, 200));
-    let w = random(5, 40);
-    let h = random(3, 15);
-    rect(random(width - w), random(height - h), w, h);
-  }
-}
-
-function drawBarcodePattern() {
-  stroke(0);
-  strokeWeight(1);
-  
-  // Bottom barcode-like pattern
-  let startY = height - 100;
-  let barCount = floor(random(50, 150));
-  
-  for (let i = 0; i < barCount; i++) {
-    let x = random(width);
-    let barHeight = random(20, 80);
-    let barWidth = random(1, 4);
-    
-    strokeWeight(barWidth);
-    line(x, startY, x, startY + barHeight);
-  }
-}
-
-function drawBackgroundNoise() {
-  loadPixels();
-  for (let i = 0; i < pixels.length; i += 4) {
-    if (random() < 0.02) {
-      let noise = random(200, 255);
-      pixels[i] = noise;
-      pixels[i + 1] = noise;
-      pixels[i + 2] = noise;
+      for (let p of glitchPositions) {
+        if (random() < 0.15) {
+          let ghostCount = floor(random(1, 4));
+          for (let i = 0; i < ghostCount; i++) {
+            push();
+            translate(p.x + random(-5, 5), p.y + random(-5, 5));
+            textSize(p.size);
+            textAlign(CENTER, CENTER);
+            text(p.char, 0, 0);
+            pop();
+          }
+        }
+      }
     }
-  }
-  updatePixels();
-}
 
-function getActiveCharPool() {
-  let pool = '';
-  
-  if (config.charSets.latin) pool += charSets.latin;
-  if (config.charSets.numbers) pool += charSets.numbers;
-  if (config.charSets.symbols) pool += charSets.symbols;
-  if (config.charSets.cyrillic) pool += charSets.cyrillic;
-  if (config.charSets.special) pool += charSets.special;
-  if (config.charSets.corruption) pool += charSets.corruption;
-  
-  return pool.split(''); // Convert string to array
-}
+    function drawScanlines() {
+      stroke(0, random(20, 40));
+      strokeWeight(random(0.5, 1.5));
 
-function updateConfig() {
-  // Update numeric values from sliders
-  config.density = document.getElementById('density').value / 100;
-  config.corruptionLevel = document.getElementById('corruption').value / 100;
-  config.repetitionHoriz = document.getElementById('rep-horiz').value / 100;
-  config.repetitionVert = document.getElementById('rep-vert').value / 100;
-  config.repetitionDiag = document.getElementById('rep-diag').value / 100;
-  config.repetitionLength = parseInt(document.getElementById('replength').value);
-  config.sizeVariation = document.getElementById('sizevar').value / 100;
-  config.clusterStrength = document.getElementById('cluster').value / 100;
-  config.positionDrift = document.getElementById('drift').value / 100;
-  config.baseFontSize = parseInt(document.getElementById('fontsize').value);
-
-  // Update display values
-  document.getElementById('density-val').textContent = document.getElementById('density').value + '%';
-  document.getElementById('corruption-val').textContent = document.getElementById('corruption').value + '%';
-  document.getElementById('rep-horiz-val').textContent = document.getElementById('rep-horiz').value + '%';
-  document.getElementById('rep-vert-val').textContent = document.getElementById('rep-vert').value + '%';
-  document.getElementById('rep-diag-val').textContent = document.getElementById('rep-diag').value + '%';
-  document.getElementById('replength-val').textContent = document.getElementById('replength').value;
-  document.getElementById('fontsize-val').textContent = document.getElementById('fontsize').value;
-  document.getElementById('sizevar-val').textContent = document.getElementById('sizevar').value + '%';
-  document.getElementById('drift-val').textContent = document.getElementById('drift').value + '%';
-  document.getElementById('cluster-val').textContent = document.getElementById('cluster').value + '%';
-
-  // Update character sets from checkboxes
-  config.charSets.latin = document.getElementById('set-latin').checked;
-  config.charSets.numbers = document.getElementById('set-numbers').checked;
-  config.charSets.symbols = document.getElementById('set-symbols').checked;
-  config.charSets.cyrillic = document.getElementById('set-cyrillic').checked;
-  config.charSets.special = document.getElementById('set-special').checked;
-  config.charSets.corruption = document.getElementById('set-corruption').checked;
-
-  // Update effects
-  config.effects.scanlines = document.getElementById('effect-scanlines').checked;
-  config.effects.ghosting = document.getElementById('effect-ghosting').checked;
-  config.effects.blocks = document.getElementById('effect-blocks').checked;
-  config.effects.barcode = document.getElementById('effect-barcode').checked;
-  config.effects.noise = document.getElementById('effect-noise').checked;
-
-  // Update source document settings
-  config.useSourceDoc = document.getElementById('use-source').checked;
-  config.sourceText = document.getElementById('source-text').value;
-
-  // Auto-regenerate on change
-  regenerate();
-}
-
-function saveImage() {
-  saveCanvas('glitch-art-' + Date.now(), 'png');
-}
-
-function randomize() {
-  document.getElementById('density').value = floor(random(10, 80));
-  document.getElementById('corruption').value = floor(random(30, 100));
-  document.getElementById('rep-horiz').value = floor(random(0, 60));
-  document.getElementById('rep-vert').value = floor(random(0, 60));
-  document.getElementById('rep-diag').value = floor(random(0, 60));
-  document.getElementById('replength').value = floor(random(2, 8));
-  document.getElementById('sizevar').value = floor(random(0, 100));
-  document.getElementById('cluster').value = floor(random(0, 80));
-  document.getElementById('drift').value = floor(random(0, 100));
-  document.getElementById('fontsize').value = floor(random(8, 18));
-
-  updateConfig();
-}
-
-function loadPreset(presetName) {
-  const presets = {
-    scan: {
-      density: 35, corruption: 60, repHoriz: 30, repVert: 15, repDiag: 10, replength: 3, sizevar: 30,
-      cluster: 20, drift: 40, fontsize: 11,
-      scanlines: true, ghosting: false, blocks: true, barcode: false, noise: true
-    },
-    fax: {
-      density: 50, corruption: 80, repHoriz: 40, repVert: 40, repDiag: 30, replength: 4, sizevar: 20,
-      cluster: 60, drift: 70, fontsize: 10,
-      scanlines: true, ghosting: true, blocks: false, barcode: true, noise: true
-    },
-    thermal: {
-      density: 40, corruption: 50, repHoriz: 10, repVert: 20, repDiag: 5, replength: 3, sizevar: 40,
-      cluster: 30, drift: 20, fontsize: 9,
-      scanlines: false, ghosting: true, blocks: true, barcode: false, noise: false
-    },
-    ocr: {
-      density: 60, corruption: 90, repHoriz: 15, repVert: 10, repDiag: 5, replength: 2, sizevar: 60,
-      cluster: 10, drift: 80, fontsize: 12,
-      scanlines: false, ghosting: false, blocks: false, barcode: false, noise: true
-    },
-    heavy: {
-      density: 70, corruption: 95, repHoriz: 50, repVert: 50, repDiag: 50, replength: 6, sizevar: 80,
-      cluster: 70, drift: 90, fontsize: 14,
-      scanlines: true, ghosting: true, blocks: true, barcode: true, noise: true
-    },
-    subtle: {
-      density: 20, corruption: 30, repHoriz: 5, repVert: 8, repDiag: 3, replength: 2, sizevar: 20,
-      cluster: 40, drift: 25, fontsize: 10,
-      scanlines: false, ghosting: false, blocks: false, barcode: false, noise: true
+      for (let y = 0; y < height; y += random(3, 12)) {
+        let x1 = random(-20, 0);
+        let x2 = width + random(0, 20);
+        line(x1, y, x2, y);
+      }
     }
-  };
 
-  const preset = presets[presetName];
-  if (!preset) return;
+    function drawCompressionBlocks() {
+      noStroke();
 
-  document.getElementById('density').value = preset.density;
-  document.getElementById('corruption').value = preset.corruption;
-  document.getElementById('rep-horiz').value = preset.repHoriz;
-  document.getElementById('rep-vert').value = preset.repVert;
-  document.getElementById('rep-diag').value = preset.repDiag;
-  document.getElementById('replength').value = preset.replength;
-  document.getElementById('sizevar').value = preset.sizevar;
-  document.getElementById('cluster').value = preset.cluster;
-  document.getElementById('drift').value = preset.drift;
-  document.getElementById('fontsize').value = preset.fontsize;
+      for (let i = 0; i < 30; i++) {
+        fill(0, random(10, 50));
+        let w = random(10, 80);
+        let h = random(5, 30);
+        rect(random(width - w), random(height - h), w, h);
+      }
 
-  document.getElementById('effect-scanlines').checked = preset.scanlines;
-  document.getElementById('effect-ghosting').checked = preset.ghosting;
-  document.getElementById('effect-blocks').checked = preset.blocks;
-  document.getElementById('effect-barcode').checked = preset.barcode;
-  document.getElementById('effect-noise').checked = preset.noise;
+      // Some white blocks too
+      for (let i = 0; i < 15; i++) {
+        fill(255, random(100, 200));
+        let w = random(5, 40);
+        let h = random(3, 15);
+        rect(random(width - w), random(height - h), w, h);
+      }
+    }
 
-  updateConfig();
-}
+    function drawBorderPattern() {
+      fill(0);
+      noStroke();
+      textSize(config.baseFontSize);
 
-</script>
+      let numPatterns = floor(random(3, 8));
+
+      for (let i = 0; i < numPatterns; i++) {
+        let y = random(50, height - 50);
+        let isLeft = random() < 0.5;
+        let char = randomChar(getActiveCharPool().join(''));
+        let len = floor(random(10, 50));
+
+        // Sometimes repeat a specific char sequence
+        let chars = "";
+        for (let k = 0; k < len; k++) chars += char;
+
+        fill(0, random(180, 255));
+
+        if (isLeft) {
+          text(chars, len * config.baseFontSize * 0.3, y);
+        } else {
+          text(chars, width - (len * config.baseFontSize * 0.3), y);
+        }
+      }
+    }
+
+    function drawBackgroundNoise() {
+      loadPixels();
+      for (let i = 0; i < pixels.length; i += 4) {
+        if (random() < 0.02) {
+          let noise = random(200, 255);
+          pixels[i] = noise;
+          pixels[i + 1] = noise;
+          pixels[i + 2] = noise;
+        }
+      }
+      updatePixels();
+    }
+
+    function getActiveCharPool() {
+      let pool = '';
+
+      if (config.charSets.latin) pool += charSets.latin;
+      if (config.charSets.numbers) pool += charSets.numbers;
+      if (config.charSets.symbols) pool += charSets.symbols;
+      if (config.charSets.cyrillic) pool += charSets.cyrillic;
+      if (config.charSets.special) pool += charSets.special;
+      if (config.charSets.corruption) pool += charSets.corruption;
+      if (config.charSets.walls) pool += charSets.walls;
+      if (config.charSets.custom && config.charSets.customChars) pool += config.charSets.customChars;
+
+      return pool.split(''); // Convert string to array
+    }
+
+    window.updateConfig = function () {
+      // Update numeric values from sliders
+      config.density = document.getElementById('density').value / 100;
+      config.corruptionLevel = document.getElementById('corruption').value / 100;
+      config.repetitionHoriz = document.getElementById('rep-horiz').value / 100;
+      config.repetitionVert = document.getElementById('rep-vert').value / 100;
+      config.repetitionDiag = document.getElementById('rep-diag').value / 100;
+      config.repetitionLength = parseInt(document.getElementById('replength').value);
+      config.sizeVariation = document.getElementById('sizevar').value / 100;
+      config.clusterStrength = document.getElementById('cluster').value / 100;
+      config.positionDrift = document.getElementById('drift').value / 100;
+      config.edgeBias = document.getElementById('edgebias').value / 100;
+      config.baseFontSize = parseInt(document.getElementById('fontsize').value);
+
+      // Update display values
+      document.getElementById('density-val').textContent = document.getElementById('density').value + '%';
+      document.getElementById('corruption-val').textContent = document.getElementById('corruption').value + '%';
+      document.getElementById('rep-horiz-val').textContent = document.getElementById('rep-horiz').value + '%';
+      document.getElementById('rep-vert-val').textContent = document.getElementById('rep-vert').value + '%';
+      document.getElementById('rep-diag-val').textContent = document.getElementById('rep-diag').value + '%';
+      document.getElementById('replength-val').textContent = document.getElementById('replength').value;
+      document.getElementById('fontsize-val').textContent = document.getElementById('fontsize').value;
+      document.getElementById('sizevar-val').textContent = document.getElementById('sizevar').value + '%';
+      document.getElementById('drift-val').textContent = document.getElementById('drift').value + '%';
+      document.getElementById('cluster-val').textContent = document.getElementById('cluster').value + '%';
+      document.getElementById('edgebias-val').textContent = document.getElementById('edgebias').value + '%';
+
+      // Update character sets from checkboxes
+      config.charSets.latin = document.getElementById('set-latin').checked;
+      config.charSets.numbers = document.getElementById('set-numbers').checked;
+      config.charSets.symbols = document.getElementById('set-symbols').checked;
+      config.charSets.cyrillic = document.getElementById('set-cyrillic').checked;
+      config.charSets.special = document.getElementById('set-special').checked;
+      config.charSets.corruption = document.getElementById('set-corruption').checked;
+      config.charSets.walls = document.getElementById('set-walls').checked;
+      config.charSets.custom = document.getElementById('set-custom').checked;
+      config.charSets.customChars = document.getElementById('custom-chars').value;
+
+      // Update effects
+      config.effects.scanlines = document.getElementById('effect-scanlines').checked;
+      config.effects.ghosting = document.getElementById('effect-ghosting').checked;
+      config.effects.blocks = document.getElementById('effect-blocks').checked;
+      config.effects.border = document.getElementById('effect-border').checked;
+      config.effects.noise = document.getElementById('effect-noise').checked;
+
+      // Update source document settings
+      config.useSourceDoc = document.getElementById('use-source').checked;
+      config.sourceText = document.getElementById('source-text').value;
+
+      // Auto-regenerate on change
+      regenerate();
+    }
+
+    function saveImage() {
+      saveCanvas('glitch-art-' + Date.now(), 'png');
+    }
+
+    function randomize() {
+      document.getElementById('density').value = floor(random(10, 80));
+      document.getElementById('corruption').value = floor(random(30, 100));
+      document.getElementById('rep-horiz').value = floor(random(0, 60));
+      document.getElementById('rep-vert').value = floor(random(0, 60));
+      document.getElementById('rep-diag').value = floor(random(0, 60));
+      document.getElementById('replength').value = floor(random(2, 8));
+      document.getElementById('sizevar').value = floor(random(0, 100));
+      document.getElementById('cluster').value = floor(random(0, 80));
+      document.getElementById('drift').value = floor(random(0, 100));
+      document.getElementById('edgebias').value = floor(random(0, 100));
+      document.getElementById('fontsize').value = floor(random(8, 18));
+
+      // Randomize some char sets
+      document.getElementById('set-walls').checked = random() > 0.5;
+
+      updateConfig();
+    }
+
+    function loadPreset(presetName) {
+      const presets = {
+        scan: {
+          density: 35, corruption: 60, repHoriz: 30, repVert: 15, repDiag: 10, replength: 3, sizevar: 30,
+          cluster: 20, drift: 40, edgebias: 50, fontsize: 11,
+          scanlines: true, ghosting: false, blocks: true, border: false, noise: true
+        },
+        fax: {
+          density: 50, corruption: 80, repHoriz: 40, repVert: 40, repDiag: 30, replength: 4, sizevar: 20,
+          cluster: 60, drift: 70, edgebias: 80, fontsize: 10,
+          scanlines: true, ghosting: true, blocks: false, border: true, noise: true
+        },
+        thermal: {
+          density: 40, corruption: 50, repHoriz: 10, repVert: 20, repDiag: 5, replength: 3, sizevar: 40,
+          cluster: 30, drift: 20, edgebias: 20, fontsize: 9,
+          scanlines: false, ghosting: true, blocks: true, border: false, noise: false
+        },
+        ocr: {
+          density: 60, corruption: 90, repHoriz: 15, repVert: 10, repDiag: 5, replength: 2, sizevar: 60,
+          cluster: 10, drift: 80, edgebias: 50, fontsize: 12,
+          scanlines: false, ghosting: false, blocks: false, border: false, noise: true
+        },
+        heavy: {
+          density: 70, corruption: 95, repHoriz: 50, repVert: 50, repDiag: 50, replength: 6, sizevar: 80,
+          cluster: 70, drift: 90, edgebias: 50, fontsize: 14,
+          scanlines: true, ghosting: true, blocks: true, border: true, noise: true
+        },
+        subtle: {
+          density: 20, corruption: 30, repHoriz: 5, repVert: 8, repDiag: 3, replength: 2, sizevar: 20,
+          cluster: 40, drift: 25, edgebias: 50, fontsize: 10,
+          scanlines: false, ghosting: false, blocks: false, border: false, noise: true
+        }
+      };
+
+      const preset = presets[presetName];
+      if (!preset) return;
+
+      document.getElementById('density').value = preset.density;
+      document.getElementById('corruption').value = preset.corruption;
+      document.getElementById('rep-horiz').value = preset.repHoriz;
+      document.getElementById('rep-vert').value = preset.repVert;
+      document.getElementById('rep-diag').value = preset.repDiag;
+      document.getElementById('replength').value = preset.replength;
+      document.getElementById('sizevar').value = preset.sizevar;
+      document.getElementById('cluster').value = preset.cluster;
+      document.getElementById('drift').value = preset.drift;
+      document.getElementById('edgebias').value = preset.edgebias || 50;
+      document.getElementById('fontsize').value = preset.fontsize;
+
+      document.getElementById('effect-scanlines').checked = preset.scanlines;
+      document.getElementById('effect-ghosting').checked = preset.ghosting;
+      document.getElementById('effect-blocks').checked = preset.blocks;
+      document.getElementById('effect-border').checked = preset.border;
+      document.getElementById('effect-noise').checked = preset.noise;
+
+      updateConfig();
+    }
+
+
+
+  </script>
 </body>
+
 </html>
