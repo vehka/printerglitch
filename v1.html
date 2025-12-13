@@ -178,11 +178,19 @@
     </div>
     
     <div class="control-group">
-      <h2>Spatial Effects</h2>
+      <h2>Repetition Effects</h2>
       <label>
-        Rotation Range <span class="value-display" id="rotation-val">45°</span>
-        <input type="range" id="rotation" min="0" max="180" value="45" oninput="updateConfig()">
+        Repetition Probability <span class="value-display" id="repetition-val">30%</span>
+        <input type="range" id="repetition" min="0" max="100" value="30" oninput="updateConfig()">
       </label>
+      <label>
+        Repetition Length <span class="value-display" id="replength-val">3</span>
+        <input type="range" id="replength" min="2" max="8" value="3" oninput="updateConfig()">
+      </label>
+    </div>
+
+    <div class="control-group">
+      <h2>Spatial Effects</h2>
       <label>
         Position Drift <span class="value-display" id="drift-val">50%</span>
         <input type="range" id="drift" min="0" max="100" value="50" oninput="updateConfig()">
@@ -236,8 +244,9 @@
 let config = {
   density: 0.3,
   corruptionLevel: 0.7,
-  repetitionProb: 0.3,  // Probability of repeating characters
-  repetitionLength: 3,   // How many times to repeat (max)  sizeVariation: 0.5,
+  repetitionProb: 0.3,
+  repetitionLength: 3,
+  sizeVariation: 0.5,
   clusterStrength: 0.4,
   positionDrift: 0.5,
   baseFontSize: 12,
@@ -260,12 +269,6 @@ let config = {
   }
 };
 
-// UI elements
-let sliders = {};
-let checkboxes = {};
-let buttons = {};
-let sourceTextarea;
-
 // Character set definitions
 const charSets = {
   latin: 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz',
@@ -285,197 +288,15 @@ let canvasWidth = 800;
 let canvasHeight = 1000;
 
 function setup() {
-  createCanvas(canvasWidth, canvasHeight);
+  let canvas = createCanvas(canvasWidth, canvasHeight);
+  canvas.parent('canvas-container');
   textFont('Courier New');
-  
-  // Create UI
-  createUI();
+
   regenerate();
 }
 
 function draw() {
   // Static image - only redraw when regenerate is called
-}
-
-function createUI() {
-  let yPos = 20;
-  let xPos = canvasWidth + 20;
-  
-  // Title
-  let title = createP('Analog Glitch Art Generator');
-  title.position(xPos, yPos);
-  title.style('font-family', 'Courier New');
-  title.style('font-weight', 'bold');
-  yPos += 40;
-  
-  // Presets
-  createP('Presets:').position(xPos, yPos).style('font-family', 'Courier New');
-  yPos += 25;
-  
-  let presets = ['Scan', 'Fax', 'Thermal', 'OCR', 'Heavy', 'Subtle'];
-  for (let i = 0; i < presets.length; i++) {
-    let btn = createButton(presets[i]);
-    btn.position(xPos + (i % 3) * 80, yPos + floor(i / 3) * 30);
-    btn.mousePressed(() => loadPreset(presets[i].toLowerCase()));
-    btn.style('font-family', 'Courier New');
-    btn.style('font-size', '10px');
-  }
-  yPos += 80;
-  
-  // Sliders
-  createP('Density:').position(xPos, yPos).style('font-family', 'Courier New');
-  yPos += 20;
-  sliders.density = createSlider(5, 100, 30, 1);
-  sliders.density.position(xPos, yPos);
-  sliders.density.input(updateConfig);
-  yPos += 40;
-  
-  createP('Corruption:').position(xPos, yPos).style('font-family', 'Courier New');
-  yPos += 20;
-  sliders.corruption = createSlider(0, 100, 70, 1);
-  sliders.corruption.position(xPos, yPos);
-  sliders.corruption.input(updateConfig);
-  yPos += 40;
-  
-  createP('Font Size:').position(xPos, yPos).style('font-family', 'Courier New');
-  yPos += 20;
-  sliders.fontsize = createSlider(6, 24, 12, 1);
-  sliders.fontsize.position(xPos, yPos);
-  sliders.fontsize.input(updateConfig);
-  yPos += 40;
-  
-  createP('Size Variation:').position(xPos, yPos).style('font-family', 'Courier New');
-  yPos += 20;
-  sliders.sizevar = createSlider(0, 100, 50, 1);
-  sliders.sizevar.position(xPos, yPos);
-  sliders.sizevar.input(updateConfig);
-  yPos += 40;
-  
-  createP('Repetition:').position(xPos, yPos).style('font-family', 'Courier New');
-  yPos += 20;
-  sliders.repetition = createSlider(0, 100, 30, 1);
-  sliders.repetition.position(xPos, yPos);
-  sliders.repetition.input(updateConfig);
-  yPos += 40;
-
-  createP('Repeat Length:').position(xPos, yPos).style('font-family', 'Courier New');
-  yPos += 20;
-  sliders.repLength = createSlider(2, 8, 3, 1);
-  sliders.repLength.position(xPos, yPos);
-  sliders.repLength.input(updateConfig);
-  yPos += 40;
-  
-  createP('Position Drift:').position(xPos, yPos).style('font-family', 'Courier New');
-  yPos += 20;
-  sliders.drift = createSlider(0, 100, 50, 1);
-  sliders.drift.position(xPos, yPos);
-  sliders.drift.input(updateConfig);
-  yPos += 40;
-  
-  createP('Clustering:').position(xPos, yPos).style('font-family', 'Courier New');
-  yPos += 20;
-  sliders.cluster = createSlider(0, 100, 40, 1);
-  sliders.cluster.position(xPos, yPos);
-  sliders.cluster.input(updateConfig);
-  yPos += 50;
-  
-  // Character sets
-  createP('Character Sets:').position(xPos, yPos).style('font-family', 'Courier New').style('font-weight', 'bold');
-  yPos += 25;
-  
-  checkboxes.latin = createCheckbox('Latin', true);
-  checkboxes.latin.position(xPos, yPos);
-  checkboxes.latin.changed(updateConfig);
-  yPos += 25;
-  
-  checkboxes.numbers = createCheckbox('Numbers', true);
-  checkboxes.numbers.position(xPos, yPos);
-  checkboxes.numbers.changed(updateConfig);
-  yPos += 25;
-  
-  checkboxes.symbols = createCheckbox('Symbols', true);
-  checkboxes.symbols.position(xPos, yPos);
-  checkboxes.symbols.changed(updateConfig);
-  yPos += 25;
-  
-  checkboxes.cyrillic = createCheckbox('Cyrillic', false);
-  checkboxes.cyrillic.position(xPos, yPos);
-  checkboxes.cyrillic.changed(updateConfig);
-  yPos += 25;
-  
-  checkboxes.special = createCheckbox('Special', false);
-  checkboxes.special.position(xPos, yPos);
-  checkboxes.special.changed(updateConfig);
-  yPos += 25;
-  
-  checkboxes.corruption = createCheckbox('Box Chars', true);
-  checkboxes.corruption.position(xPos, yPos);
-  checkboxes.corruption.changed(updateConfig);
-  yPos += 40;
-  
-  // Effects
-  createP('Effects:').position(xPos, yPos).style('font-family', 'Courier New').style('font-weight', 'bold');
-  yPos += 25;
-  
-  checkboxes.scanlines = createCheckbox('Scan Lines', true);
-  checkboxes.scanlines.position(xPos, yPos);
-  checkboxes.scanlines.changed(updateConfig);
-  yPos += 25;
-  
-  checkboxes.ghosting = createCheckbox('Ghosting', true);
-  checkboxes.ghosting.position(xPos, yPos);
-  checkboxes.ghosting.changed(updateConfig);
-  yPos += 25;
-  
-  checkboxes.blocks = createCheckbox('Compression', true);
-  checkboxes.blocks.position(xPos, yPos);
-  checkboxes.blocks.changed(updateConfig);
-  yPos += 25;
-  
-  checkboxes.barcode = createCheckbox('Barcode', false);
-  checkboxes.barcode.position(xPos, yPos);
-  checkboxes.barcode.changed(updateConfig);
-  yPos += 25;
-  
-  checkboxes.noise = createCheckbox('Noise', true);
-  checkboxes.noise.position(xPos, yPos);
-  checkboxes.noise.changed(updateConfig);
-  yPos += 40;
-  
-  // Source document
-  createP('Source Text (optional):').position(xPos, yPos).style('font-family', 'Courier New').style('font-weight', 'bold');
-  yPos += 25;
-  
-  checkboxes.useSource = createCheckbox('Use Source', false);
-  checkboxes.useSource.position(xPos, yPos);
-  checkboxes.useSource.changed(updateConfig);
-  yPos += 25;
-  
-  sourceTextarea = createElement('textarea');
-  sourceTextarea.position(xPos, yPos);
-  sourceTextarea.size(240, 100);
-  sourceTextarea.attribute('placeholder', 'Paste text to glitch...');
-  sourceTextarea.style('font-family', 'Courier New');
-  sourceTextarea.style('font-size', '10px');
-  yPos += 120;
-  
-  // Action buttons
-  let regenBtn = createButton('Regenerate');
-  regenBtn.position(xPos, yPos);
-  regenBtn.mousePressed(regenerate);
-  regenBtn.style('font-family', 'Courier New');
-  yPos += 35;
-  
-  let saveBtn = createButton('Save Image');
-  saveBtn.position(xPos, yPos);
-  saveBtn.mousePressed(() => saveCanvas('glitch-art-' + Date.now(), 'png'));
-  saveBtn.style('font-family', 'Courier New');
-  yPos += 35;
-  
-  let randomBtn = createButton('Randomize');
-  randomBtn.position(xPos, yPos);
-  randomBtn.mousePressed(randomize);
-  randomBtn.style('font-family', 'Courier New');
 }
 
 function regenerate() {
@@ -620,14 +441,12 @@ function generateFromSource() {
     
     let driftX = randomGaussian(0, config.corruptionLevel * 20);
     let driftY = randomGaussian(0, config.corruptionLevel * 10);
-    
+
     positions.push({
       x: x + driftX,
       y: y + driftY,
       char: char,
-      rotation: random(-config.corruptionLevel * config.rotationRange, 
-                      config.corruptionLevel * config.rotationRange),
-      size: config.baseFontSize * random(1 - config.sizeVariation * 0.5, 
+      size: config.baseFontSize * random(1 - config.sizeVariation * 0.5,
                                           1 + config.sizeVariation * 0.5),
       opacity: random(150, 255)
     });
@@ -759,104 +578,117 @@ function getActiveCharPool() {
 
 function updateConfig() {
   // Update numeric values from sliders
-  config.density = sliders.density.value() / 100;
-  config.corruptionLevel = sliders.corruption.value() / 100;
-  config.repetitionProb = sliders.repetition.value() / 100;
-  config.repetitionLength = sliders.repLength.value();
-  config.sizeVariation = sliders.sizevar.value() / 100;
-  config.clusterStrength = sliders.cluster.value() / 100;
-  config.positionDrift = sliders.drift.value() / 100;
-  config.baseFontSize = sliders.fontsize.value();
-  
-  // Update character sets from checkboxes
-  config.charSets.latin = checkboxes.latin.checked();
-  config.charSets.numbers = checkboxes.numbers.checked();
-  config.charSets.symbols = checkboxes.symbols.checked();
-  config.charSets.cyrillic = checkboxes.cyrillic.checked();
-  config.charSets.special = checkboxes.special.checked();
-  config.charSets.corruption = checkboxes.corruption.checked();
-  
-  // Update effects
-  config.effects.scanlines = checkboxes.scanlines.checked();
-  config.effects.ghosting = checkboxes.ghosting.checked();
-  config.effects.blocks = checkboxes.blocks.checked();
-  config.effects.barcode = checkboxes.barcode.checked();
-  config.effects.noise = checkboxes.noise.checked();
-  
-  // Update source document settings
-  config.useSourceDoc = checkboxes.useSource.checked();
-  config.sourceText = sourceTextarea.elt.value;
+  config.density = document.getElementById('density').value / 100;
+  config.corruptionLevel = document.getElementById('corruption').value / 100;
+  config.repetitionProb = document.getElementById('repetition').value / 100;
+  config.repetitionLength = parseInt(document.getElementById('replength').value);
+  config.sizeVariation = document.getElementById('sizevar').value / 100;
+  config.clusterStrength = document.getElementById('cluster').value / 100;
+  config.positionDrift = document.getElementById('drift').value / 100;
+  config.baseFontSize = parseInt(document.getElementById('fontsize').value);
 
-  
+  // Update display values
+  document.getElementById('density-val').textContent = document.getElementById('density').value + '%';
+  document.getElementById('corruption-val').textContent = document.getElementById('corruption').value + '%';
+  document.getElementById('repetition-val').textContent = document.getElementById('repetition').value + '%';
+  document.getElementById('replength-val').textContent = document.getElementById('replength').value;
+  document.getElementById('fontsize-val').textContent = document.getElementById('fontsize').value;
+  document.getElementById('sizevar-val').textContent = document.getElementById('sizevar').value + '%';
+  document.getElementById('drift-val').textContent = document.getElementById('drift').value + '%';
+  document.getElementById('cluster-val').textContent = document.getElementById('cluster').value + '%';
+
+  // Update character sets from checkboxes
+  config.charSets.latin = document.getElementById('set-latin').checked;
+  config.charSets.numbers = document.getElementById('set-numbers').checked;
+  config.charSets.symbols = document.getElementById('set-symbols').checked;
+  config.charSets.cyrillic = document.getElementById('set-cyrillic').checked;
+  config.charSets.special = document.getElementById('set-special').checked;
+  config.charSets.corruption = document.getElementById('set-corruption').checked;
+
+  // Update effects
+  config.effects.scanlines = document.getElementById('effect-scanlines').checked;
+  config.effects.ghosting = document.getElementById('effect-ghosting').checked;
+  config.effects.blocks = document.getElementById('effect-blocks').checked;
+  config.effects.barcode = document.getElementById('effect-barcode').checked;
+  config.effects.noise = document.getElementById('effect-noise').checked;
+
+  // Update source document settings
+  config.useSourceDoc = document.getElementById('use-source').checked;
+  config.sourceText = document.getElementById('source-text').value;
+
   // Auto-regenerate on change
   regenerate();
 }
 
+function saveImage() {
+  saveCanvas('glitch-art-' + Date.now(), 'png');
+}
+
 function randomize() {
-  sliders.density.value(random(10, 80));
-  sliders.corruption.value(random(30, 100));
-  sliders.repetition.value(random(10, 80));
-  sliders.repLength.value(random(2, 6));
-  sliders.sizevar.value(random(0, 100));
-  sliders.cluster.value(random(0, 80));
-  sliders.drift.value(random(0, 100));
-  sliders.fontsize.value(random(8, 18));
-  
+  document.getElementById('density').value = floor(random(10, 80));
+  document.getElementById('corruption').value = floor(random(30, 100));
+  document.getElementById('repetition').value = floor(random(10, 80));
+  document.getElementById('replength').value = floor(random(2, 8));
+  document.getElementById('sizevar').value = floor(random(0, 100));
+  document.getElementById('cluster').value = floor(random(0, 80));
+  document.getElementById('drift').value = floor(random(0, 100));
+  document.getElementById('fontsize').value = floor(random(8, 18));
+
   updateConfig();
 }
 
 function loadPreset(presetName) {
   const presets = {
     scan: {
-      density: 35, corruption: 60, repetition: 20, repLength: 3, sizevar: 30, 
+      density: 35, corruption: 60, repetition: 20, replength: 3, sizevar: 30,
       cluster: 20, drift: 40, fontsize: 11,
       scanlines: true, ghosting: false, blocks: true, barcode: false, noise: true
     },
     fax: {
-      density: 50, corruption: 80, repetition: 20, repLength: 3, sizevar: 20, 
+      density: 50, corruption: 80, repetition: 40, replength: 4, sizevar: 20,
       cluster: 60, drift: 70, fontsize: 10,
       scanlines: true, ghosting: true, blocks: false, barcode: true, noise: true
     },
     thermal: {
-      density: 40, corruption: 50, repetition: 20, repLength: 3, sizevar: 40, 
+      density: 40, corruption: 50, repetition: 15, replength: 3, sizevar: 40,
       cluster: 30, drift: 20, fontsize: 9,
       scanlines: false, ghosting: true, blocks: true, barcode: false, noise: false
     },
     ocr: {
-      density: 60, corruption: 90, repetition: 20, repLength: 3, sizevar: 60, 
+      density: 60, corruption: 90, repetition: 10, replength: 2, sizevar: 60,
       cluster: 10, drift: 80, fontsize: 12,
       scanlines: false, ghosting: false, blocks: false, barcode: false, noise: true
     },
     heavy: {
-      density: 70, corruption: 95, repetition: 20, repLength: 3, sizevar: 80, 
+      density: 70, corruption: 95, repetition: 60, replength: 6, sizevar: 80,
       cluster: 70, drift: 90, fontsize: 14,
       scanlines: true, ghosting: true, blocks: true, barcode: true, noise: true
     },
     subtle: {
-      density: 20, corruption: 30, repetition: 20, repLength: 3, sizevar: 20, 
+      density: 20, corruption: 30, repetition: 10, replength: 2, sizevar: 20,
       cluster: 40, drift: 25, fontsize: 10,
       scanlines: false, ghosting: false, blocks: false, barcode: false, noise: true
     }
   };
-  
+
   const preset = presets[presetName];
   if (!preset) return;
-  
-  sliders.density.value(preset.density);
-  sliders.corruption.value(preset.corruption);
-  sliders.repetition.value(preset.repetition);
-  sliders.repLength.value(preset.repLength);
-  sliders.sizevar.value(preset.sizevar);
-  sliders.cluster.value(preset.cluster);
-  sliders.drift.value(preset.drift);
-  sliders.fontsize.value(preset.fontsize);
-  
-  checkboxes.scanlines.checked(preset.scanlines);
-  checkboxes.ghosting.checked(preset.ghosting);
-  checkboxes.blocks.checked(preset.blocks);
-  checkboxes.barcode.checked(preset.barcode);
-  checkboxes.noise.checked(preset.noise);
-  
+
+  document.getElementById('density').value = preset.density;
+  document.getElementById('corruption').value = preset.corruption;
+  document.getElementById('repetition').value = preset.repetition;
+  document.getElementById('replength').value = preset.replength;
+  document.getElementById('sizevar').value = preset.sizevar;
+  document.getElementById('cluster').value = preset.cluster;
+  document.getElementById('drift').value = preset.drift;
+  document.getElementById('fontsize').value = preset.fontsize;
+
+  document.getElementById('effect-scanlines').checked = preset.scanlines;
+  document.getElementById('effect-ghosting').checked = preset.ghosting;
+  document.getElementById('effect-blocks').checked = preset.blocks;
+  document.getElementById('effect-barcode').checked = preset.barcode;
+  document.getElementById('effect-noise').checked = preset.noise;
+
   updateConfig();
 }
 
