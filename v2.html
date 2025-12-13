@@ -1437,6 +1437,32 @@
             }
 
             window.updateConfig = function () {
+                // Track if we need to regenerate specific layers
+                let needCharacterRegen = false;
+                let needHorizLinesRegen = false;
+
+                // Character settings - check if they changed
+                let oldDensity = config.density;
+                let oldCorruption = config.corruptionLevel;
+                let oldFontSize = config.baseFontSize;
+                let oldSizeVar = config.sizeVariation;
+                let oldRepHoriz = config.repetitionHoriz;
+                let oldRepVert = config.repetitionVert;
+                let oldRepDiag = config.repetitionDiag;
+                let oldRepLength = config.repetitionLength;
+                let oldDrift = config.positionDrift;
+                let oldCluster = config.clusterStrength;
+                let oldEdgeBias = config.edgeBias;
+                let oldCharSets = {...config.charSets};
+                let oldUseSource = config.useSourceDoc;
+                let oldSourceText = config.sourceText;
+
+                // Horizontal lines settings
+                let oldHorizDensity = config.horizLinesDensity;
+                let oldHorizLength = config.horizLinesLength;
+                let oldHorizCharSet = config.horizLinesCharSet;
+
+                // Update config
                 config.density = document.getElementById("density").value / 100;
                 config.corruptionLevel =
                     document.getElementById("corruption").value / 100;
@@ -1535,7 +1561,48 @@
                 config.sourceText =
                     document.getElementById("source-text").value;
 
-                compositeImage();
+                // Check if character-related settings changed
+                if (oldDensity !== config.density ||
+                    oldCorruption !== config.corruptionLevel ||
+                    oldFontSize !== config.baseFontSize ||
+                    oldSizeVar !== config.sizeVariation ||
+                    oldRepHoriz !== config.repetitionHoriz ||
+                    oldRepVert !== config.repetitionVert ||
+                    oldRepDiag !== config.repetitionDiag ||
+                    oldRepLength !== config.repetitionLength ||
+                    oldDrift !== config.positionDrift ||
+                    oldCluster !== config.clusterStrength ||
+                    oldEdgeBias !== config.edgeBias ||
+                    oldUseSource !== config.useSourceDoc ||
+                    oldSourceText !== config.sourceText ||
+                    oldCharSets.latin !== config.charSets.latin ||
+                    oldCharSets.numbers !== config.charSets.numbers ||
+                    oldCharSets.symbols !== config.charSets.symbols ||
+                    oldCharSets.cyrillic !== config.charSets.cyrillic ||
+                    oldCharSets.special !== config.charSets.special ||
+                    oldCharSets.corruption !== config.charSets.corruption ||
+                    oldCharSets.walls !== config.charSets.walls ||
+                    oldCharSets.custom !== config.charSets.custom ||
+                    oldCharSets.customChars !== config.charSets.customChars) {
+                    needCharacterRegen = true;
+                }
+
+                // Check if horizontal lines settings changed
+                if (oldHorizDensity !== config.horizLinesDensity ||
+                    oldHorizLength !== config.horizLinesLength ||
+                    oldHorizCharSet !== config.horizLinesCharSet) {
+                    needHorizLinesRegen = true;
+                }
+
+                // Regenerate affected layers
+                if (needCharacterRegen) {
+                    regenerateCharacters();
+                } else if (needHorizLinesRegen) {
+                    regenerateHorizLines();
+                } else {
+                    // Just recomposite if only effect toggles changed
+                    compositeImage();
+                }
             };
 
             function saveImage() {
