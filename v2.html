@@ -361,6 +361,84 @@
             </div>
 
             <div class="control-group">
+                <h2>Macro Shape</h2>
+                <div class="checkbox-group">
+                    <label
+                        ><input
+                            type="checkbox"
+                            id="macro-shape-enable"
+                            onchange="updateConfig()"
+                        />
+                        Enable Macro Shape</label
+                    >
+                </div>
+                <div
+                    id="macro-shape-controls"
+                    style="
+                        margin-top: 10px;
+                        padding-left: 10px;
+                        border-left: 2px solid #ddd;
+                    "
+                >
+                    <label>
+                        Shape Character:
+                        <input
+                            type="text"
+                            id="macro-shape-char"
+                            value="O"
+                            maxlength="3"
+                            oninput="updateConfig()"
+                            style="
+                                width: 100%;
+                                margin-top: 5px;
+                                background: #333;
+                                border: 1px solid #555;
+                                color: white;
+                                padding: 4px;
+                                font-size: 24px;
+                                text-align: center;
+                            "
+                        />
+                    </label>
+                    <label style="margin-top: 10px">
+                        Mode:
+                        <select
+                            id="macro-shape-mode"
+                            onchange="updateConfig()"
+                            style="width: 100%; margin-top: 5px"
+                        >
+                            <option value="normal">Normal (form shape)</option>
+                            <option value="inverse">Inverse (background)</option>
+                        </select>
+                    </label>
+                    <label>
+                        Shape Size
+                        <span class="value-display" id="macro-size-val">80%</span>
+                        <input
+                            type="range"
+                            id="macro-shape-size"
+                            min="20"
+                            max="100"
+                            value="80"
+                            oninput="updateConfig()"
+                        />
+                    </label>
+                    <label>
+                        Shape Strength
+                        <span class="value-display" id="macro-strength-val">80%</span>
+                        <input
+                            type="range"
+                            id="macro-shape-strength"
+                            min="0"
+                            max="100"
+                            value="80"
+                            oninput="updateConfig()"
+                        />
+                    </label>
+                </div>
+            </div>
+
+            <div class="control-group">
                 <h2>Character Sets</h2>
                 <div class="checkbox-group">
                     <label
@@ -651,6 +729,13 @@
                 horizLinesLength: 0.5,
                 horizLinesCharSet: "walls",
 
+                // Macro Shape Settings
+                macroShapeEnabled: false,
+                macroShapeChar: "O",
+                macroShapeMode: "normal",
+                macroShapeSize: 0.8,
+                macroShapeStrength: 0.8,
+
                 charSets: {
                     latin: true,
                     numbers: true,
@@ -703,6 +788,7 @@
             let glitchPositions = [];
             let canvasWidth = 800;
             let canvasHeight = 1000;
+            let macroShapeMask = null; // Stores the macro shape mask
 
             function setup() {
                 let canvas = createCanvas(canvasWidth, canvasHeight);
@@ -824,6 +910,9 @@
             }
 
             function regenerateCharacters() {
+                // Regenerate macro shape mask if enabled
+                generateMacroShapeMask();
+
                 // Regenerate character positions
                 glitchPositions = config.useSourceDoc
                     ? generateFromSource()
@@ -871,6 +960,61 @@
                 compositeImage();
             }
 
+            // Generate macro shape mask
+            function generateMacroShapeMask() {
+                if (!config.macroShapeEnabled || !config.macroShapeChar) {
+                    if (macroShapeMask) {
+                        macroShapeMask.remove();
+                        macroShapeMask = null;
+                    }
+                    return;
+                }
+
+                if (macroShapeMask) macroShapeMask.remove();
+                macroShapeMask = createGraphics(canvasWidth, canvasHeight);
+
+                macroShapeMask.background(255);
+                macroShapeMask.fill(0);
+                macroShapeMask.noStroke();
+                macroShapeMask.textAlign(CENTER, CENTER);
+                macroShapeMask.textFont("Special Elite");
+
+                // Calculate font size to fit the shape
+                let shapeSize = min(canvasWidth, canvasHeight) * config.macroShapeSize;
+                macroShapeMask.textSize(shapeSize);
+
+                // Draw the macro shape character
+                macroShapeMask.text(
+                    config.macroShapeChar,
+                    canvasWidth / 2,
+                    canvasHeight / 2
+                );
+
+                // Load pixels for sampling
+                macroShapeMask.loadPixels();
+            }
+
+            // Sample the macro shape mask at a given position
+            function sampleMacroShape(x, y) {
+                if (!macroShapeMask || !config.macroShapeEnabled) return 0.5;
+
+                let ix = constrain(floor(x), 0, canvasWidth - 1);
+                let iy = constrain(floor(y), 0, canvasHeight - 1);
+                let index = (ix + iy * canvasWidth) * 4;
+
+                // Get brightness (0 = black/shape, 255 = white/background)
+                let brightness = macroShapeMask.pixels[index] / 255.0;
+
+                // Return mask value based on mode
+                if (config.macroShapeMode === "normal") {
+                    // Normal: higher value where shape is (dark pixels)
+                    return 1.0 - brightness;
+                } else {
+                    // Inverse: higher value where background is (light pixels)
+                    return brightness;
+                }
+            }
+
             function generateRandomPositions() {
                 let positions = [];
                 let charPool = getActiveCharPool();
@@ -906,6 +1050,14 @@
                             );
                         }
                         noiseVal *= biasFactor;
+
+                        // Apply macro shape mask if enabled
+                        if (config.macroShapeEnabled && macroShapeMask) {
+                            let shapeMask = sampleMacroShape(x, y);
+                            // Blend noise with shape mask based on strength
+                            let strength = config.macroShapeStrength;
+                            noiseVal = noiseVal * (1 - strength) + shapeMask * strength;
+                        }
 
                         let densityThreshold = 1 - config.density;
                         let clusterMod = map(
@@ -1462,6 +1614,13 @@
                 let oldHorizLength = config.horizLinesLength;
                 let oldHorizCharSet = config.horizLinesCharSet;
 
+                // Macro shape settings
+                let oldMacroEnabled = config.macroShapeEnabled;
+                let oldMacroChar = config.macroShapeChar;
+                let oldMacroMode = config.macroShapeMode;
+                let oldMacroSize = config.macroShapeSize;
+                let oldMacroStrength = config.macroShapeStrength;
+
                 // Update config
                 config.density = document.getElementById("density").value / 100;
                 config.corruptionLevel =
@@ -1495,6 +1654,18 @@
                     document.getElementById("horiz-length").value / 100;
                 config.horizLinesCharSet =
                     document.getElementById("horiz-charset").value;
+
+                // Macro shape config
+                config.macroShapeEnabled =
+                    document.getElementById("macro-shape-enable").checked;
+                config.macroShapeChar =
+                    document.getElementById("macro-shape-char").value;
+                config.macroShapeMode =
+                    document.getElementById("macro-shape-mode").value;
+                config.macroShapeSize =
+                    document.getElementById("macro-shape-size").value / 100;
+                config.macroShapeStrength =
+                    document.getElementById("macro-shape-strength").value / 100;
 
                 config.effects.horizLines =
                     document.getElementById("effect-horiz-lines").checked;
@@ -1536,6 +1707,11 @@
                     document.getElementById("horiz-density").value + "%";
                 document.getElementById("horiz-length-val").textContent =
                     document.getElementById("horiz-length").value + "%";
+
+                document.getElementById("macro-size-val").textContent =
+                    document.getElementById("macro-shape-size").value + "%";
+                document.getElementById("macro-strength-val").textContent =
+                    document.getElementById("macro-shape-strength").value + "%";
 
                 config.charSets.latin =
                     document.getElementById("set-latin").checked;
@@ -1583,7 +1759,12 @@
                     oldCharSets.corruption !== config.charSets.corruption ||
                     oldCharSets.walls !== config.charSets.walls ||
                     oldCharSets.custom !== config.charSets.custom ||
-                    oldCharSets.customChars !== config.charSets.customChars) {
+                    oldCharSets.customChars !== config.charSets.customChars ||
+                    oldMacroEnabled !== config.macroShapeEnabled ||
+                    oldMacroChar !== config.macroShapeChar ||
+                    oldMacroMode !== config.macroShapeMode ||
+                    oldMacroSize !== config.macroShapeSize ||
+                    oldMacroStrength !== config.macroShapeStrength) {
                     needCharacterRegen = true;
                 }
 
