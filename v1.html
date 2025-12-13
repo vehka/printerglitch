@@ -547,6 +547,7 @@
       for (let i = 0; i < chars.length; i++) {
         let char = chars[i];
         if (char === '\n') { x = 50; y += lineHeight; continue; }
+
         if (random() < config.corruptionLevel) char = random(charPool);
 
         let driftX = randomGaussian(0, config.corruptionLevel * 20);
