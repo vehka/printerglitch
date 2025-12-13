@@ -161,6 +161,7 @@
         <option value="a3">A3 (Portrait)</option>
         <option value="a2">A2 (Portrait)</option>
         <option value="a1">A1 (Portrait)</option>
+        <option value="4k">4K Wallpaper (3840x2160)</option>
         <option value="screen" selected>Screen (800x1000)</option>
       </select>
     </div>
@@ -250,18 +251,45 @@
     </div>
 
     <div class="control-group">
+      <h2>Horizontal Lines</h2>
+      <label><input type="checkbox" id="effect-horiz-lines" onchange="updateConfig()"> Enable Horizontal Lines</label>
+
+      <div id="horiz-lines-controls" style="margin-top: 10px; padding-left: 10px; border-left: 2px solid #ddd;">
+        <label>
+          Density <span class="value-display" id="horiz-density-val">50%</span>
+          <input type="range" id="horiz-density" min="1" max="100" value="50" oninput="updateConfig()">
+        </label>
+        <label>
+          Max Length <span class="value-display" id="horiz-length-val">50%</span>
+          <input type="range" id="horiz-length" min="10" max="100" value="50" oninput="updateConfig()">
+        </label>
+        <label>
+          Character Set:
+          <select id="horiz-charset" onchange="updateConfig()" style="width: 100%; margin-top: 5px;">
+            <option value="walls">Walls (Lines)</option>
+            <option value="corruption">Corruption Blocks</option>
+            <option value="latin">Latin Text</option>
+            <option value="mixed">Mixed Random</option>
+          </select>
+        </label>
+      </div>
+    </div>
+
+    <div class="control-group">
+      <h2>Visual Artifacts</h2>
+      <div class="checkbox-group">
+        <label><input type="checkbox" id="effect-stains" onchange="updateConfig()"> Photocopier Stains</label>
+        <label><input type="checkbox" id="effect-noise" checked onchange="updateConfig()"> Background Noise</label>
+      </div>
+    </div>
+
+    <div class="control-group">
       <h2>Glitch Effects</h2>
       <div class="checkbox-group">
         <label><input type="checkbox" id="effect-scanlines" checked onchange="updateConfig()"> Scan Lines</label>
         <label><input type="checkbox" id="effect-ghosting" checked onchange="updateConfig()"> Character Ghosting</label>
         <label><input type="checkbox" id="effect-blocks" checked onchange="updateConfig()"> Compression Blocks</label>
-        <label><input type="checkbox" id="effect-border" onchange="updateConfig()"> Border Patterns</label>
-        <label><input type="checkbox" id="effect-noise" checked onchange="updateConfig()"> Background Noise</label>
       </div>
-      <label style="margin-top: 10px;">
-        Border Density <span class="value-display" id="border-density-val">50%</span>
-        <input type="range" id="border-density" min="0" max="100" value="50" oninput="updateConfig()">
-      </label>
     </div>
 
     <div class="control-group">
@@ -291,11 +319,16 @@
       sizeVariation: 0.5,
       clusterStrength: 0.4,
       positionDrift: 0.5,
-      edgeBias: 0.5, // 0 = center, 1 = edge
-      borderDensity: 0.5,
+      edgeBias: 0.5,
       baseFontSize: 12,
       useSourceDoc: false,
       sourceText: '',
+
+      // New Settings
+      horizLinesDensity: 0.5,
+      horizLinesLength: 0.5,
+      horizLinesCharSet: 'walls',
+
       charSets: {
         latin: true,
         numbers: true,
@@ -311,7 +344,8 @@
         scanlines: true,
         ghosting: true,
         blocks: true,
-        border: false,
+        horizLines: false,
+        stains: false,
         noise: true
       }
     };
@@ -328,6 +362,7 @@
     };
 
     function randomChar(str) {
+      if (!str || str.length === 0) return ' ';
       return str.charAt(floor(random(str.length)));
     }
 
@@ -344,7 +379,7 @@
     }
 
     function draw() {
-      // Static image - only redraw when regenerate is called
+      // Static image
     }
 
     window.updateCanvasSize = function () {
@@ -365,6 +400,9 @@
       } else if (mode === 'a1') {
         canvasWidth = 1684;
         canvasHeight = 2384;
+      } else if (mode === '4k') {
+        canvasWidth = 3840;
+        canvasHeight = 2160;
       }
 
       resizeCanvas(canvasWidth, canvasHeight);
@@ -374,25 +412,34 @@
     function regenerate() {
       background(255);
 
-      // Add background noise if enabled
+      // 1. Background Noise (Bottom Layer)
       if (config.effects.noise) {
         drawBackgroundNoise();
       }
 
-      // Generate positions
+      // 2. Photocopier Stains
+      if (config.effects.stains) {
+        drawStains();
+      }
+
+      // 3. Generate Character Positions
       glitchPositions = config.useSourceDoc ?
         generateFromSource() :
         generateRandomPositions();
 
-      // Draw ghosting layer first (behind main characters)
+      // 4. Ghosting (Behind Text)
       if (config.effects.ghosting) {
         drawGhosting();
       }
 
-      // Draw main characters
+      // 5. Main Text
       drawCharacters();
 
-      // Apply effects on top
+      // 6. Top Layer Effects
+      if (config.effects.horizLines) {
+        drawHorizontalLines();
+      }
+
       if (config.effects.scanlines) {
         drawScanlines();
       }
@@ -400,36 +447,22 @@
       if (config.effects.blocks) {
         drawCompressionBlocks();
       }
-
-      if (config.effects.border) {
-        drawBorderPattern();
-      }
     }
 
     function generateRandomPositions() {
       let positions = [];
       let charPool = getActiveCharPool();
+      if (charPool.length === 0) charPool = ['X'];
 
-      if (charPool.length === 0) {
-        charPool = ['X']; // Fallback if no sets selected
-      }
-
-      // Use noise-based density for clustering
       noiseSeed(random(10000));
-
       let gridSpacing = config.baseFontSize * 1.2;
 
       for (let y = 0; y < height; y += gridSpacing) {
-
         for (let x = 0; x < width; x += gridSpacing) {
-
-          // Noise-based density variation
           let noiseVal = noise(x * 0.005, y * 0.005);
 
-          // Apply Edge Bias
           let normalizedX = x / width;
-          let distFromCenter = abs(normalizedX - 0.5) * 2; // 0 at center, 1 at edges
-
+          let distFromCenter = abs(normalizedX - 0.5) * 2;
           let biasFactor = 1;
           if (config.edgeBias > 0.5) {
             let strength = map(config.edgeBias, 0.5, 1, 0, 1);
@@ -438,19 +471,15 @@
             let strength = map(config.edgeBias, 0.5, 0, 0, 1);
             biasFactor = map(distFromCenter, 0, 1, 1 + strength, 1 - strength);
           }
-
           noiseVal *= biasFactor;
 
           let densityThreshold = 1 - config.density;
-
-          // Apply cluster strength
           let clusterMod = map(config.clusterStrength, 0, 1, 0.5, 1.5);
           noiseVal = pow(noiseVal, clusterMod);
 
           if (noiseVal > densityThreshold) {
             let driftX = randomGaussian(0, config.positionDrift * 15);
             let driftY = randomGaussian(0, config.positionDrift * 8);
-
             let char = randomChar(charPool.join(''));
 
             positions.push({
@@ -461,7 +490,6 @@
               opacity: random(180, 255)
             });
 
-            // Repetition logic...
             if (random() < config.repetitionHoriz) {
               let repeatCount = floor(random(2, config.repetitionLength + 1));
               for (let r = 1; r <= repeatCount; r++) {
@@ -474,7 +502,6 @@
                 });
               }
             }
-
             if (random() < config.repetitionVert) {
               let repeatCount = floor(random(2, config.repetitionLength + 1));
               for (let r = 1; r <= repeatCount; r++) {
@@ -487,7 +514,6 @@
                 });
               }
             }
-
             if (random() < config.repetitionDiag) {
               let repeatCount = floor(random(2, config.repetitionLength + 1));
               let diagDir = random() < 0.5 ? 1 : -1;
@@ -504,7 +530,6 @@
           }
         }
       }
-
       return positions;
     }
 
@@ -521,16 +546,8 @@
 
       for (let i = 0; i < chars.length; i++) {
         let char = chars[i];
-
-        if (char === '\n') {
-          x = 50;
-          y += lineHeight;
-          continue;
-        }
-
-        if (random() < config.corruptionLevel) {
-          char = random(charPool);
-        }
+        if (char === '\n') { x = 50; y += lineHeight; continue; }
+        if (random() < config.corruptionLevel) char = random(charPool);
 
         let driftX = randomGaussian(0, config.corruptionLevel * 20);
         let driftY = randomGaussian(0, config.corruptionLevel * 10);
@@ -539,30 +556,19 @@
           x: x + driftX,
           y: y + driftY,
           char: char,
-          size: config.baseFontSize * random(1 - config.sizeVariation * 0.5,
-            1 + config.sizeVariation * 0.5),
+          size: config.baseFontSize * random(1 - config.sizeVariation * 0.5, 1 + config.sizeVariation * 0.5),
           opacity: random(150, 255)
         });
 
         x += charWidth;
-
-        if (x > width - 100) {
-          x = 50;
-          y += lineHeight;
-        }
-
-        if (y > height - 50) {
-          break;
-        }
+        if (x > width - 100) { x = 50; y += lineHeight; }
+        if (y > height - 50) break;
       }
-
       return positions;
     }
 
     function drawCharacters() {
-      fill(0);
-      noStroke();
-
+      fill(0); noStroke();
       for (let p of glitchPositions) {
         push();
         translate(p.x, p.y);
@@ -575,9 +581,7 @@
     }
 
     function drawGhosting() {
-      fill(0, 50);
-      noStroke();
-
+      fill(0, 50); noStroke();
       for (let p of glitchPositions) {
         if (random() < 0.15) {
           let ghostCount = floor(random(1, 4));
@@ -594,92 +598,146 @@
     }
 
     function drawScanlines() {
-      stroke(0, random(20, 40));
-      strokeWeight(random(0.5, 1.5));
-
+      stroke(0, random(20, 40)); strokeWeight(random(0.5, 1.5));
       for (let y = 0; y < height; y += random(3, 12)) {
-        let x1 = random(-20, 0);
-        let x2 = width + random(0, 20);
+        let x1 = random(-20, 0); let x2 = width + random(0, 20);
         line(x1, y, x2, y);
       }
     }
 
     function drawCompressionBlocks() {
       noStroke();
-
       for (let i = 0; i < 30; i++) {
         fill(0, random(10, 50));
-        let w = random(10, 80);
-        let h = random(5, 30);
-        rect(random(width - w), random(height - h), w, h);
+        rect(random(width), random(height), random(10, 80), random(5, 30));
       }
-
-      // Some white blocks too
       for (let i = 0; i < 15; i++) {
         fill(255, random(100, 200));
-        let w = random(5, 40);
-        let h = random(3, 15);
-        rect(random(width - w), random(height - h), w, h);
+        rect(random(width), random(height), random(5, 40), random(3, 15));
       }
     }
 
-    function drawBorderPattern() {
-      fill(0);
-      noStroke();
-      textSize(config.baseFontSize);
+    // --- NEW: Stains Effects ---
+    function drawStains() {
+      // Create off-screen buffer for blurring
+      let pg = createGraphics(width, height);
+      pg.noStroke();
 
-      // Control number of repeating lines with borderDensity
-      // Map 0-1 to reasonable range, e.g., 2 to 30 lines
-      let numPatterns = floor(map(config.borderDensity, 0, 1, 2, 30));
+      // 1. Vertical Streaks (Drum marks)
+      let numStreaks = floor(random(3, 10));
+      for (let i = 0; i < numStreaks; i++) {
+        let x = random(width);
+        let w = random(20, 200);
+        let startY = random(-100, height);
+        let h = random(height * 0.5, height * 1.5);
 
-      for (let i = 0; i < numPatterns; i++) {
-        let y = random(50, height - 50);
-        let isLeft = random() < 0.5;
-        let char = randomChar(getActiveCharPool().join(''));
+        // Draw streak using noise for texture
+        // We iterate down the Y axis
+        for (let y = startY; y < startY + h; y += 4) {
+          // Noise scale: High freq X (texture), Low freq Y (streak consistency)
+          let n = noise(x * 0.05, y * 0.005);
 
-        // Edge to edge logic
-        // If density is high, we might want some lines to be full width
-        // With higher density, we allow longer lines
-        let maxWidthChars = width / (config.baseFontSize * 0.6); // approx char width
-        let maxLen = map(config.borderDensity, 0, 1, 50, maxWidthChars);
+          // Threshold to create gaps/texture
+          if (n > 0.4) {
+            // Map noise to shades of gray (alpha)
+            // We want subtle dark grays
+            let alpha = map(n, 0.4, 0.8, 5, 25);
+            pg.fill(30, alpha);
 
-        let len = floor(random(10, maxLen));
-
-        // Sometimes repeat a specific char sequence
-        let chars = "";
-        for (let k = 0; k < len; k++) chars += char;
-
-        fill(0, random(180, 255));
-
-        // If length is close to max width, center it? Or just draw from left?
-        if (len > maxWidthChars * 0.8) {
-          text(chars, width / 2, y); // Center if very long
-        } else {
-          if (isLeft) {
-            text(chars, len * config.baseFontSize * 0.3, y);
-          } else {
-            text(chars, width - (len * config.baseFontSize * 0.3), y);
+            // Width variation
+            let streakW = w * (n * 1.2);
+            pg.rect(x - streakW / 2, y, streakW, 4);
           }
+        }
+      }
+
+      // 2. Chaotic Blots (Toner spills)
+      let numBlobs = floor(random(8, 20));
+      for (let i = 0; i < numBlobs; i++) {
+        let x = random(width);
+        let y = random(height);
+        let r = random(10, 60);
+
+        // Darker, more intense spots
+        pg.fill(10, random(10, 30));
+        // Vertical stretch for realism (gravity/drum motion)
+        pg.ellipse(x, y, r, r * random(1.5, 4));
+      }
+
+      // 3. Apply Gaussian Blur to soften everything
+      // 8px radius for soft "out of focus" look
+      pg.filter(BLUR, 8);
+
+      // Draw buffer to main canvas
+      image(pg, 0, 0);
+
+      // Cleanup to prevent memory leaks
+      pg.remove();
+    }
+
+    // --- NEW: Horizontal Lines ---
+    function drawHorizontalLines() {
+      fill(0); noStroke(); textSize(config.baseFontSize);
+
+      // Select Char Pool for Lines
+      let pool = '';
+      switch (config.horizLinesCharSet) {
+        case 'walls': pool = charSets.walls; break;
+        case 'corruption': pool = charSets.corruption; break;
+        case 'latin': pool = charSets.latin; break;
+        case 'mixed': pool = getActiveCharPool().join(''); break;
+        default: pool = charSets.walls;
+      }
+
+      // Density controls count
+      let numLines = floor(map(config.horizLinesDensity, 0, 1, 1, 50));
+
+      for (let i = 0; i < numLines; i++) {
+        let y = random(10, height - 10);
+        let char = randomChar(pool);
+
+        // Length control
+        let maxChars = width / (config.baseFontSize * 0.6);
+        let lineLengthPercent = map(config.horizLinesLength, 0, 1, 0.05, 1.0);
+        let lineLen = floor(random(2, maxChars * lineLengthPercent));
+
+        let lineStr = "";
+        for (let k = 0; k < lineLen; k++) lineStr += char;
+
+        fill(0, random(150, 255));
+
+        // Random horizontal placement logic
+        if (lineLen > maxChars * 0.9) {
+          // Full width-ish
+          textAlign(CENTER, CENTER);
+          text(lineStr, width / 2, y);
+        } else {
+          // Random placement
+          let startX = random(0, width - (lineLen * config.baseFontSize * 0.6));
+          textAlign(LEFT, CENTER);
+          text(lineStr, startX, y);
         }
       }
     }
 
     function drawBackgroundNoise() {
       loadPixels();
+      // Increase probability slightly if it's too subtle, or darken it
       for (let i = 0; i < pixels.length; i += 4) {
-        if (random() < 0.02) {
-          let noise = random(200, 255);
-          pixels[i] = noise;
-          pixels[i + 1] = noise;
-          pixels[i + 2] = noise;
+        if (random() < 0.03) { // 3% of pixels
+          let shade = random(150, 230); // Darker noise spots
+          pixels[i] = shade;
+          pixels[i + 1] = shade;
+          pixels[i + 2] = shade;
+          // pixels[i+3] is alpha, leave 255
         }
       }
       updatePixels();
     }
 
+    // Helper: pool
     function getActiveCharPool() {
       let pool = '';
-
       if (config.charSets.latin) pool += charSets.latin;
       if (config.charSets.numbers) pool += charSets.numbers;
       if (config.charSets.symbols) pool += charSets.symbols;
@@ -688,40 +746,55 @@
       if (config.charSets.corruption) pool += charSets.corruption;
       if (config.charSets.walls) pool += charSets.walls;
       if (config.charSets.custom && config.charSets.customChars) pool += config.charSets.customChars;
-
-      return pool.split(''); // Convert string to array
+      return pool.split('');
     }
 
     window.updateConfig = function () {
-      // Update numeric values from sliders
+      // 1. Basic Sliders
       config.density = document.getElementById('density').value / 100;
       config.corruptionLevel = document.getElementById('corruption').value / 100;
+      config.baseFontSize = parseInt(document.getElementById('fontsize').value);
+      config.sizeVariation = document.getElementById('sizevar').value / 100;
+
       config.repetitionHoriz = document.getElementById('rep-horiz').value / 100;
       config.repetitionVert = document.getElementById('rep-vert').value / 100;
       config.repetitionDiag = document.getElementById('rep-diag').value / 100;
       config.repetitionLength = parseInt(document.getElementById('replength').value);
-      config.sizeVariation = document.getElementById('sizevar').value / 100;
-      config.clusterStrength = document.getElementById('cluster').value / 100;
-      config.positionDrift = document.getElementById('drift').value / 100;
-      config.edgeBias = document.getElementById('edgebias').value / 100;
-      config.borderDensity = document.getElementById('border-density').value / 100;
-      config.baseFontSize = parseInt(document.getElementById('fontsize').value);
 
-      // Update display values
+      config.positionDrift = document.getElementById('drift').value / 100;
+      config.clusterStrength = document.getElementById('cluster').value / 100;
+      config.edgeBias = document.getElementById('edgebias').value / 100;
+
+      // 2. New Horizontal Line Controls
+      config.horizLinesDensity = document.getElementById('horiz-density').value / 100;
+      config.horizLinesLength = document.getElementById('horiz-length').value / 100;
+      config.horizLinesCharSet = document.getElementById('horiz-charset').value;
+
+      // 3. Effects Checkboxes
+      config.effects.horizLines = document.getElementById('effect-horiz-lines').checked;
+      config.effects.stains = document.getElementById('effect-stains').checked;
+      config.effects.noise = document.getElementById('effect-noise').checked;
+      config.effects.scanlines = document.getElementById('effect-scanlines').checked;
+      config.effects.ghosting = document.getElementById('effect-ghosting').checked;
+      config.effects.blocks = document.getElementById('effect-blocks').checked;
+
+      // 4. Update Displays
       document.getElementById('density-val').textContent = document.getElementById('density').value + '%';
       document.getElementById('corruption-val').textContent = document.getElementById('corruption').value + '%';
+      document.getElementById('fontsize-val').textContent = document.getElementById('fontsize').value;
+      document.getElementById('sizevar-val').textContent = document.getElementById('sizevar').value + '%';
       document.getElementById('rep-horiz-val').textContent = document.getElementById('rep-horiz').value + '%';
       document.getElementById('rep-vert-val').textContent = document.getElementById('rep-vert').value + '%';
       document.getElementById('rep-diag-val').textContent = document.getElementById('rep-diag').value + '%';
       document.getElementById('replength-val').textContent = document.getElementById('replength').value;
-      document.getElementById('fontsize-val').textContent = document.getElementById('fontsize').value;
-      document.getElementById('sizevar-val').textContent = document.getElementById('sizevar').value + '%';
       document.getElementById('drift-val').textContent = document.getElementById('drift').value + '%';
       document.getElementById('cluster-val').textContent = document.getElementById('cluster').value + '%';
       document.getElementById('edgebias-val').textContent = document.getElementById('edgebias').value + '%';
-      document.getElementById('border-density-val').textContent = document.getElementById('border-density').value + '%';
 
-      // Update character sets from checkboxes
+      document.getElementById('horiz-density-val').textContent = document.getElementById('horiz-density').value + '%';
+      document.getElementById('horiz-length-val').textContent = document.getElementById('horiz-length').value + '%';
+
+      // 5. Char sets
       config.charSets.latin = document.getElementById('set-latin').checked;
       config.charSets.numbers = document.getElementById('set-numbers').checked;
       config.charSets.symbols = document.getElementById('set-symbols').checked;
@@ -732,18 +805,10 @@
       config.charSets.custom = document.getElementById('set-custom').checked;
       config.charSets.customChars = document.getElementById('custom-chars').value;
 
-      // Update effects
-      config.effects.scanlines = document.getElementById('effect-scanlines').checked;
-      config.effects.ghosting = document.getElementById('effect-ghosting').checked;
-      config.effects.blocks = document.getElementById('effect-blocks').checked;
-      config.effects.border = document.getElementById('effect-border').checked;
-      config.effects.noise = document.getElementById('effect-noise').checked;
-
-      // Update source document settings
+      // 6. Source
       config.useSourceDoc = document.getElementById('use-source').checked;
       config.sourceText = document.getElementById('source-text').value;
 
-      // Auto-regenerate on change
       regenerate();
     }
 
@@ -752,21 +817,30 @@
     }
 
     function randomize() {
-      document.getElementById('density').value = floor(random(10, 80));
-      document.getElementById('corruption').value = floor(random(30, 100));
-      document.getElementById('rep-horiz').value = floor(random(0, 60));
-      document.getElementById('rep-vert').value = floor(random(0, 60));
-      document.getElementById('rep-diag').value = floor(random(0, 60));
-      document.getElementById('replength').value = floor(random(2, 8));
-      document.getElementById('sizevar').value = floor(random(0, 100));
-      document.getElementById('cluster').value = floor(random(0, 80));
-      document.getElementById('drift').value = floor(random(0, 100));
-      document.getElementById('edgebias').value = floor(random(0, 100));
-      document.getElementById('border-density').value = floor(random(0, 100));
-      document.getElementById('fontsize').value = floor(random(8, 18));
+      let ids = ['density', 'corruption', 'rep-horiz', 'rep-vert', 'rep-diag', 'sizevar', 'cluster', 'drift', 'edgebias', 'horiz-density', 'horiz-length'];
+      for (let id of ids) document.getElementById(id).value = floor(random(10, 90));
+
+      document.getElementById('fontsize').value = floor(random(8, 16));
+      document.getElementById('replength').value = floor(random(2, 6));
 
       // Randomize some char sets
       document.getElementById('set-walls').checked = random() > 0.5;
+      document.getElementById('set-corruption').checked = random() > 0.5;
+      document.getElementById('set-latin').checked = random() > 0.5;
+      document.getElementById('set-numbers').checked = random() > 0.5;
+      document.getElementById('set-symbols').checked = random() > 0.5;
+
+      // Randomize effects
+      document.getElementById('effect-scanlines').checked = random() > 0.5;
+      document.getElementById('effect-ghosting').checked = random() > 0.5;
+      document.getElementById('effect-blocks').checked = random() > 0.5;
+      document.getElementById('effect-stains').checked = random() > 0.5;
+      document.getElementById('effect-horiz-lines').checked = random() > 0.5;
+      document.getElementById('effect-noise').checked = random() > 0.5;
+
+      // Randomize horizontal line charset
+      const charSetOptions = ['walls', 'corruption', 'latin', 'mixed'];
+      document.getElementById('horiz-charset').value = random(charSetOptions);
 
       updateConfig();
     }
@@ -775,33 +849,39 @@
       const presets = {
         scan: {
           density: 35, corruption: 60, repHoriz: 30, repVert: 15, repDiag: 10, replength: 3, sizevar: 30,
-          cluster: 20, drift: 40, edgebias: 50, borderDensity: 40, fontsize: 11,
-          scanlines: true, ghosting: false, blocks: true, border: false, noise: true
+          cluster: 20, drift: 40, edgebias: 50, fontsize: 11,
+          scanlines: true, ghosting: false, blocks: true, horizLines: false, stains: false, noise: true,
+          horizLinesDensity: 50, horizLinesLength: 50, horizLinesCharSet: 'walls'
         },
         fax: {
           density: 50, corruption: 80, repHoriz: 40, repVert: 40, repDiag: 30, replength: 4, sizevar: 20,
-          cluster: 60, drift: 70, edgebias: 80, borderDensity: 80, fontsize: 10,
-          scanlines: true, ghosting: true, blocks: false, border: true, noise: true
+          cluster: 60, drift: 70, edgebias: 80, fontsize: 10,
+          scanlines: true, ghosting: true, blocks: false, horizLines: true, stains: true, noise: true,
+          horizLinesDensity: 80, horizLinesLength: 80, horizLinesCharSet: 'corruption'
         },
         thermal: {
           density: 40, corruption: 50, repHoriz: 10, repVert: 20, repDiag: 5, replength: 3, sizevar: 40,
-          cluster: 30, drift: 20, edgebias: 20, borderDensity: 30, fontsize: 9,
-          scanlines: false, ghosting: true, blocks: true, border: false, noise: false
+          cluster: 30, drift: 20, edgebias: 20, fontsize: 9,
+          scanlines: false, ghosting: true, blocks: true, horizLines: false, stains: false, noise: false,
+          horizLinesDensity: 30, horizLinesLength: 30, horizLinesCharSet: 'latin'
         },
         ocr: {
           density: 60, corruption: 90, repHoriz: 15, repVert: 10, repDiag: 5, replength: 2, sizevar: 60,
-          cluster: 10, drift: 80, edgebias: 50, borderDensity: 50, fontsize: 12,
-          scanlines: false, ghosting: false, blocks: false, border: false, noise: true
+          cluster: 10, drift: 80, edgebias: 50, fontsize: 12,
+          scanlines: false, ghosting: false, blocks: false, horizLines: false, stains: false, noise: true,
+          horizLinesDensity: 50, horizLinesLength: 50, horizLinesCharSet: 'mixed'
         },
         heavy: {
           density: 70, corruption: 95, repHoriz: 50, repVert: 50, repDiag: 50, replength: 6, sizevar: 80,
-          cluster: 70, drift: 90, edgebias: 50, borderDensity: 90, fontsize: 14,
-          scanlines: true, ghosting: true, blocks: true, border: true, noise: true
+          cluster: 70, drift: 90, edgebias: 50, fontsize: 14,
+          scanlines: true, ghosting: true, blocks: true, horizLines: true, stains: true, noise: true,
+          horizLinesDensity: 90, horizLinesLength: 90, horizLinesCharSet: 'walls'
         },
         subtle: {
           density: 20, corruption: 30, repHoriz: 5, repVert: 8, repDiag: 3, replength: 2, sizevar: 20,
-          cluster: 40, drift: 25, edgebias: 50, borderDensity: 20, fontsize: 10,
-          scanlines: false, ghosting: false, blocks: false, border: false, noise: true
+          cluster: 40, drift: 25, edgebias: 50, fontsize: 10,
+          scanlines: false, ghosting: false, blocks: false, horizLines: false, stains: false, noise: true,
+          horizLinesDensity: 20, horizLinesLength: 20, horizLinesCharSet: 'latin'
         }
       };
 
@@ -818,13 +898,17 @@
       document.getElementById('cluster').value = preset.cluster;
       document.getElementById('drift').value = preset.drift;
       document.getElementById('edgebias').value = preset.edgebias || 50;
-      document.getElementById('border-density').value = preset.borderDensity || 50;
       document.getElementById('fontsize').value = preset.fontsize;
+
+      document.getElementById('horiz-density').value = preset.horizLinesDensity;
+      document.getElementById('horiz-length').value = preset.horizLinesLength;
+      document.getElementById('horiz-charset').value = preset.horizLinesCharSet;
 
       document.getElementById('effect-scanlines').checked = preset.scanlines;
       document.getElementById('effect-ghosting').checked = preset.ghosting;
       document.getElementById('effect-blocks').checked = preset.blocks;
-      document.getElementById('effect-border').checked = preset.border;
+      document.getElementById('effect-horiz-lines').checked = preset.horizLines;
+      document.getElementById('effect-stains').checked = preset.stains;
       document.getElementById('effect-noise').checked = preset.noise;
 
       updateConfig();
