@@ -1026,7 +1026,7 @@
         }
 
         function drawStainsToLayer(layer) {
-            randomSeed(millis());
+            noiseSeed(millis()); // Randomize noise field to prevent duplicate shapes
             layer.noStroke();
 
             let numStains = floor(random(2, 6));
@@ -1069,8 +1069,10 @@
                 }
 
                 pg.loadPixels();
-                let noiseOffsetX = random(1000);
-                let noiseOffsetY = random(1000);
+                pg.loadPixels();
+                // Use Math.random() to ensure independence from p5 randomSeed state
+                let noiseOffsetX = Math.random() * 100000;
+                let noiseOffsetY = Math.random() * 100000;
 
                 let noiseScaleCoarse = random(0.008, 0.015);
                 let noiseScaleFine = random(0.03, 0.06);
@@ -1103,6 +1105,21 @@
                         );
 
                         let verticalFade = map(normY, 0, 1, 1.2, 0.3);
+
+                        // New: Organic top edge fade
+                        let topEdgeNoise = noise(x * 0.05 + noiseOffsetX + 1000);
+                        let topStart = map(topEdgeNoise, 0, 1, 0.0, 0.2); // Start anywhere in top 20%
+
+                        let topFade = 1.0;
+                        if (normY < topStart) {
+                            topFade = 0;
+                        } else if (normY < topStart + 0.1) {
+                            topFade = map(normY, topStart, topStart + 0.1, 0, 1);
+                        }
+
+                        // Apply top fade to verticalFade to keep logic clean? 
+                        // Or apply directly to stainMask. Let's apply to verticalFade effectively.
+                        verticalFade *= topFade;
 
                         let edgeVariation = edgeNoise * 0.3;
                         let effectiveWidth = widthAtY + edgeVariation;
