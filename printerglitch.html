@@ -3,7 +3,7 @@
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Analog Glitch Art Generator</title>
+        <title>Printer glitch</title>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.7.0/p5.min.js"></script>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -103,6 +103,19 @@
                 background: #666;
             }
 
+            button.mini {
+                width: auto;
+                padding: 4px 8px;
+                font-size: 10px;
+                margin-left: 8px;
+                display: inline-block;
+                background: #666;
+            }
+
+            button.mini:hover {
+                background: #777;
+            }
+
             .value-display {
                 float: right;
                 color: #4a9eff;
@@ -126,6 +139,17 @@
                 margin: 8px 0;
             }
 
+            .checkbox-with-regen {
+                display: flex;
+                align-items: center;
+                margin-bottom: 8px;
+            }
+
+            .checkbox-with-regen label {
+                margin: 0;
+                flex: 1;
+            }
+
             select {
                 width: 100%;
                 padding: 8px;
@@ -136,25 +160,13 @@
                 font-size: 12px;
                 margin-bottom: 10px;
             }
-
-            #preset-buttons {
-                display: grid;
-                grid-template-columns: 1fr 1fr;
-                gap: 5px;
-                margin-top: 10px;
-            }
-
-            #preset-buttons button {
-                padding: 8px;
-                font-size: 11px;
-            }
         </style>
     </head>
 
     <body>
         <div id="canvas-container"></div>
         <div id="controls">
-            <h1 style="margin-top: 0; font-size: 18px">Analog Glitch Art</h1>
+            <h1 style="margin-top: 0; font-size: 18px">Printer Glitch</h1>
 
             <div class="control-group">
                 <h2>Canvas Settings</h2>
@@ -166,30 +178,6 @@
                     <option value="4k">4K Wallpaper (3840x2160)</option>
                     <option value="screen" selected>Screen (800x1000)</option>
                 </select>
-            </div>
-
-            <div class="control-group">
-                <h2>Presets</h2>
-                <div id="preset-buttons">
-                    <button class="secondary" onclick="loadPreset('scan')">
-                        Scan Damage
-                    </button>
-                    <button class="secondary" onclick="loadPreset('fax')">
-                        Fax Error
-                    </button>
-                    <button class="secondary" onclick="loadPreset('thermal')">
-                        Thermal Print
-                    </button>
-                    <button class="secondary" onclick="loadPreset('ocr')">
-                        OCR Fail
-                    </button>
-                    <button class="secondary" onclick="loadPreset('heavy')">
-                        Heavy Glitch
-                    </button>
-                    <button class="secondary" onclick="loadPreset('subtle')">
-                        Subtle Noise
-                    </button>
-                </div>
             </div>
 
             <div class="control-group">
@@ -337,6 +325,105 @@
             </div>
 
             <div class="control-group">
+                <h2>Macro Shape</h2>
+                <div class="checkbox-group">
+                    <label
+                        ><input
+                            type="checkbox"
+                            id="macro-shape-enable"
+                            onchange="updateConfig()"
+                        />
+                        Enable Macro Shape</label
+                    >
+                </div>
+                <div
+                    id="macro-shape-controls"
+                    style="
+                        margin-top: 10px;
+                        padding-left: 10px;
+                        border-left: 2px solid #ddd;
+                    "
+                >
+                    <label>
+                        Shape Character:
+                        <input
+                            type="text"
+                            id="macro-shape-char"
+                            value="A"
+                            maxlength="20"
+                            oninput="updateConfig()"
+                            style="
+                                width: 100px;
+                                font-family: &quot;Special Elite&quot;;
+                                text-transform: uppercase;
+                            "
+                        />
+                    </label>
+                    <label>
+                        Mode:
+                        <select id="macro-shape-mode" onchange="updateConfig()">
+                            <option value="normal">Normal (Dark Shape)</option>
+                            <option value="inverse">
+                                Inverse (Light Shape)
+                            </option>
+                        </select>
+                    </label>
+                    <label>
+                        Mask Strength
+                        <span class="value-display" id="macro-strength-val"
+                            >100%</span
+                        >
+                        <input
+                            type="range"
+                            id="macro-shape-strength"
+                            min="0"
+                            max="100"
+                            value="100"
+                            oninput="updateConfig()"
+                        />
+                    </label>
+                    <label>
+                        Shape Size
+                        <span class="value-display" id="macro-size-val"
+                            >80%</span
+                        >
+                        <input
+                            type="range"
+                            id="macro-shape-size"
+                            min="20"
+                            max="100"
+                            value="80"
+                            oninput="updateConfig()"
+                        />
+                    </label>
+                    <label>
+                        Pos X
+                        <span class="value-display" id="macro-x-val">0%</span>
+                        <input
+                            type="range"
+                            id="macro-shape-x"
+                            min="0"
+                            max="100"
+                            value="0"
+                            oninput="updateConfig()"
+                        />
+                    </label>
+                    <label>
+                        Pos Y
+                        <span class="value-display" id="macro-y-val">0%</span>
+                        <input
+                            type="range"
+                            id="macro-shape-y"
+                            min="0"
+                            max="100"
+                            value="0"
+                            oninput="updateConfig()"
+                        />
+                    </label>
+                </div>
+            </div>
+
+            <div class="control-group">
                 <h2>Character Sets</h2>
                 <div class="checkbox-group">
                     <label
@@ -427,14 +514,19 @@
 
             <div class="control-group">
                 <h2>Horizontal Lines</h2>
-                <label
-                    ><input
-                        type="checkbox"
-                        id="effect-horiz-lines"
-                        onchange="updateConfig()"
-                    />
-                    Enable Horizontal Lines</label
-                >
+                <div class="checkbox-with-regen">
+                    <label
+                        ><input
+                            type="checkbox"
+                            id="effect-horiz-lines"
+                            onchange="updateConfig()"
+                        />
+                        Enable Horizontal Lines</label
+                    >
+                    <button class="mini" onclick="regenerateHorizLines()">
+                        ⟳
+                    </button>
+                </div>
 
                 <div
                     id="horiz-lines-controls"
@@ -493,56 +585,81 @@
             <div class="control-group">
                 <h2>Visual Artifacts</h2>
                 <div class="checkbox-group">
-                    <label
-                        ><input
-                            type="checkbox"
-                            id="effect-stains"
-                            onchange="updateConfig()"
-                        />
-                        Photocopier Stains</label
-                    >
-                    <label
-                        ><input
-                            type="checkbox"
-                            id="effect-noise"
-                            checked
-                            onchange="updateConfig()"
-                        />
-                        Background Noise</label
-                    >
+                    <div class="checkbox-with-regen">
+                        <label
+                            ><input
+                                type="checkbox"
+                                id="effect-stains"
+                                onchange="updateConfig()"
+                            />
+                            Photocopier Stains</label
+                        >
+                        <button class="mini" onclick="regenerateStains()">
+                            ⟳
+                        </button>
+                    </div>
+                    <div class="checkbox-with-regen">
+                        <label
+                            ><input
+                                type="checkbox"
+                                id="effect-noise"
+                                checked
+                                onchange="updateConfig()"
+                            />
+                            Background Noise</label
+                        >
+                        <button class="mini" onclick="regenerateNoise()">
+                            ⟳
+                        </button>
+                    </div>
                 </div>
             </div>
 
             <div class="control-group">
                 <h2>Glitch Effects</h2>
                 <div class="checkbox-group">
-                    <label
-                        ><input
-                            type="checkbox"
-                            id="effect-scanlines"
-                            checked
-                            onchange="updateConfig()"
-                        />
-                        Scan Lines</label
-                    >
-                    <label
-                        ><input
-                            type="checkbox"
-                            id="effect-ghosting"
-                            checked
-                            onchange="updateConfig()"
-                        />
-                        Character Ghosting</label
-                    >
-                    <label
-                        ><input
-                            type="checkbox"
-                            id="effect-blocks"
-                            checked
-                            onchange="updateConfig()"
-                        />
-                        Compression Blocks</label
-                    >
+                    <div class="checkbox-with-regen">
+                        <label
+                            ><input
+                                type="checkbox"
+                                id="effect-scanlines"
+                                checked
+                                onchange="updateConfig()"
+                            />
+                            Scan Lines</label
+                        >
+                        <button class="mini" onclick="regenerateScanlines()">
+                            ⟳
+                        </button>
+                    </div>
+                    <div class="checkbox-with-regen">
+                        <label
+                            ><input
+                                type="checkbox"
+                                id="effect-ghosting"
+                                checked
+                                onchange="updateConfig()"
+                            />
+                            Character Ghosting</label
+                        >
+                        <button class="mini" onclick="regenerateCharacters()">
+                            ⟳
+                        </button>
+                    </div>
+                    <div class="checkbox-with-regen">
+                        <label
+                            ><input
+                                type="checkbox"
+                                id="effect-blocks"
+                                checked
+                                onchange="updateConfig()"
+                            />
+                            Compression Blocks</label
+                        >
+                        <button class="mini" onclick="regenerateBlocks()">
+                            ⟳
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -565,7 +682,10 @@
             </div>
 
             <div class="control-group">
-                <button onclick="regenerate()">⟳ Regenerate</button>
+                <button onclick="regenerateAll()">⟳ Regenerate All</button>
+                <button onclick="regenerateCharacters()" class="secondary">
+                    ⟳ Regen Characters
+                </button>
                 <button onclick="saveImage()" class="secondary">
                     💾 Save Image
                 </button>
@@ -595,6 +715,15 @@
                 horizLinesDensity: 0.5,
                 horizLinesLength: 0.5,
                 horizLinesCharSet: "walls",
+
+                // Macro Shape Settings
+                macroShapeEnabled: false,
+                macroShapeChar: "A",
+                macroShapeMode: "normal",
+                macroShapeSize: 0.8,
+                macroShapeStrength: 1.0,
+                macroShapeX: 0.0,
+                macroShapeY: 0.0,
 
                 charSets: {
                     latin: true,
@@ -634,20 +763,72 @@
                 return str.charAt(floor(random(str.length)));
             }
 
+            // Layer storage - each layer is independent
+            let layers = {
+                noise: null,
+                stains: null,
+                characters: null,
+                ghosting: null,
+                horizLines: null,
+                scanlines: null,
+                blocks: null,
+            };
+
             let glitchPositions = [];
             let canvasWidth = 800;
             let canvasHeight = 1000;
+            let macroShapeMask = null; // Stores the macro shape mask
 
             function setup() {
                 let canvas = createCanvas(canvasWidth, canvasHeight);
                 canvas.parent("canvas-container");
                 textFont("Special Elite");
 
-                regenerate();
+                regenerateAll();
             }
 
             function draw() {
-                // Static image
+                // Static image - only composite when needed
+            }
+
+            // Composite all layers
+            function compositeImage() {
+                background(255);
+
+                // Layer 1: Background Noise
+                if (config.effects.noise && layers.noise) {
+                    image(layers.noise, 0, 0);
+                }
+
+                // Layer 2: Stains
+                if (config.effects.stains && layers.stains) {
+                    image(layers.stains, 0, 0);
+                }
+
+                // Layer 3: Ghosting
+                if (config.effects.ghosting && layers.ghosting) {
+                    image(layers.ghosting, 0, 0);
+                }
+
+                // Layer 4: Main Characters
+                if (layers.characters) {
+                    image(layers.characters, 0, 0);
+                }
+
+                // Layer 5: Horizontal Lines
+                if (config.effects.horizLines && layers.horizLines) {
+                    image(layers.horizLines, 0, 0);
+                }
+
+                // Layer 6: Scanlines
+                if (config.effects.scanlines && layers.scanlines) {
+                    image(layers.scanlines, 0, 0);
+                }
+
+                // Layer 7: Compression Blocks
+                if (config.effects.blocks && layers.blocks) {
+                    image(layers.blocks, 0, 0);
+                }
             }
 
             window.updateCanvasSize = function () {
@@ -674,46 +855,174 @@
                 }
 
                 resizeCanvas(canvasWidth, canvasHeight);
-                regenerate();
+                regenerateAll();
             };
 
-            function regenerate() {
-                background(255);
+            // Regenerate everything
+            function regenerateAll() {
+                regenerateNoise();
+                regenerateStains();
+                regenerateCharacters();
+                regenerateHorizLines();
+                regenerateScanlines();
+                regenerateBlocks();
+            }
 
-                // 1. Background Noise (Bottom Layer)
-                if (config.effects.noise) {
-                    drawBackgroundNoise();
+            // Individual regeneration functions
+            function regenerateNoise() {
+                if (layers.noise) layers.noise.remove();
+                layers.noise = createGraphics(canvasWidth, canvasHeight);
+
+                layers.noise.loadPixels();
+                for (let i = 0; i < layers.noise.pixels.length; i += 4) {
+                    if (random() < 0.03) {
+                        let shade = random(150, 230);
+                        layers.noise.pixels[i] = shade;
+                        layers.noise.pixels[i + 1] = shade;
+                        layers.noise.pixels[i + 2] = shade;
+                        layers.noise.pixels[i + 3] = 255;
+                    } else {
+                        layers.noise.pixels[i + 3] = 0; // Transparent
+                    }
                 }
+                layers.noise.updatePixels();
+                compositeImage();
+            }
 
-                // 2. Photocopier Stains
-                if (config.effects.stains) {
-                    drawStains();
-                }
+            function regenerateStains() {
+                if (layers.stains) layers.stains.remove();
+                layers.stains = createGraphics(canvasWidth, canvasHeight);
+                layers.stains.clear();
 
-                // 3. Generate Character Positions
+                drawStainsToLayer(layers.stains);
+                compositeImage();
+            }
+
+            function regenerateCharacters() {
+                // Regenerate macro shape mask if enabled
+                generateMacroShapeMask();
+
+                // Regenerate character positions
                 glitchPositions = config.useSourceDoc
                     ? generateFromSource()
                     : generateRandomPositions();
 
-                // 4. Ghosting (Behind Text)
-                if (config.effects.ghosting) {
-                    drawGhosting();
+                // Regenerate character layer
+                if (layers.characters) layers.characters.remove();
+                layers.characters = createGraphics(canvasWidth, canvasHeight);
+                layers.characters.clear();
+                drawCharactersToLayer(layers.characters);
+
+                // Also regenerate ghosting since it depends on character positions
+                if (layers.ghosting) layers.ghosting.remove();
+                layers.ghosting = createGraphics(canvasWidth, canvasHeight);
+                layers.ghosting.clear();
+                drawGhostingToLayer(layers.ghosting);
+
+                compositeImage();
+            }
+
+            function regenerateHorizLines() {
+                if (layers.horizLines) layers.horizLines.remove();
+                layers.horizLines = createGraphics(canvasWidth, canvasHeight);
+                layers.horizLines.clear();
+
+                drawHorizontalLinesToLayer(layers.horizLines);
+                compositeImage();
+            }
+
+            function regenerateScanlines() {
+                if (layers.scanlines) layers.scanlines.remove();
+                layers.scanlines = createGraphics(canvasWidth, canvasHeight);
+                layers.scanlines.clear();
+
+                drawScanlinesToLayer(layers.scanlines);
+                compositeImage();
+            }
+
+            function regenerateBlocks() {
+                if (layers.blocks) layers.blocks.remove();
+                layers.blocks = createGraphics(canvasWidth, canvasHeight);
+                layers.blocks.clear();
+
+                drawCompressionBlocksToLayer(layers.blocks);
+                compositeImage();
+            }
+
+            // Generate macro shape mask
+            function generateMacroShapeMask() {
+                if (!config.macroShapeEnabled || !config.macroShapeChar) {
+                    if (macroShapeMask) {
+                        macroShapeMask.remove();
+                        macroShapeMask = null;
+                    }
+                    return;
                 }
 
-                // 5. Main Text
-                drawCharacters();
+                if (macroShapeMask) macroShapeMask.remove();
+                macroShapeMask = createGraphics(canvasWidth, canvasHeight);
 
-                // 6. Top Layer Effects
-                if (config.effects.horizLines) {
-                    drawHorizontalLines();
-                }
+                macroShapeMask.background(255);
+                macroShapeMask.fill(0);
+                macroShapeMask.noStroke();
 
-                if (config.effects.scanlines) {
-                    drawScanlines();
-                }
+                macroShapeMask.textFont("Special Elite");
 
-                if (config.effects.blocks) {
-                    drawCompressionBlocks();
+                // Calculate font size.
+                // If text is long, user may need to reduce size manually.
+                let targetSize =
+                    min(canvasWidth, canvasHeight) * config.macroShapeSize;
+                macroShapeMask.textSize(targetSize);
+
+                let x = canvasWidth * (config.macroShapeX || 0);
+                let y = canvasHeight * (config.macroShapeY || 0);
+                let w = canvasWidth - x; // Fill remaining width
+                let h = canvasHeight - y; // Fill remaining height
+
+                // If user selects 0,0 (default), box is full canvas.
+                // We use CENTER, CENTER to center the text in that box.
+                macroShapeMask.textAlign(CENTER, CENTER);
+
+                // Draw the macro shape character(s) with word wrapping
+                macroShapeMask.text(config.macroShapeChar, x, y, w, h);
+
+                // Load pixels for sampling
+                macroShapeMask.loadPixels();
+            }
+
+            function sampleMacroShape(x, y) {
+                if (!macroShapeMask || !config.macroShapeEnabled) return 0.5;
+
+                // Handle pixel density for high DPI displays
+                let d = macroShapeMask.pixelDensity();
+
+                let physX = floor(x * d);
+                let physY = floor(y * d);
+                let physW = macroShapeMask.width * d;
+                let physH = macroShapeMask.height * d;
+
+                let ix = constrain(physX, 0, physW - 1);
+                let iy = constrain(physY, 0, physH - 1);
+
+                let index = (ix + iy * physW) * 4;
+
+                // Safety check
+                if (
+                    !macroShapeMask.pixels ||
+                    index >= macroShapeMask.pixels.length
+                )
+                    return 0.5;
+
+                // Get brightness (0 = black/shape, 255 = white/background)
+                let brightness = macroShapeMask.pixels[index] / 255.0;
+
+                // Return mask value based on mode
+                if (config.macroShapeMode === "normal") {
+                    // Normal: higher value where shape is (dark pixels)
+                    return 1.0 - brightness;
+                } else {
+                    // Inverse: higher value where background is (light pixels)
+                    return brightness;
                 }
             }
 
@@ -725,11 +1034,11 @@
                 noiseSeed(random(10000));
                 let gridSpacing = config.baseFontSize * 1.2;
 
-                for (let y = 0; y < height; y += gridSpacing) {
-                    for (let x = 0; x < width; x += gridSpacing) {
+                for (let y = 0; y < canvasHeight; y += gridSpacing) {
+                    for (let x = 0; x < canvasWidth; x += gridSpacing) {
                         let noiseVal = noise(x * 0.005, y * 0.005);
 
-                        let normalizedX = x / width;
+                        let normalizedX = x / canvasWidth;
                         let distFromCenter = abs(normalizedX - 0.5) * 2;
                         let biasFactor = 1;
                         if (config.edgeBias > 0.5) {
@@ -752,6 +1061,16 @@
                             );
                         }
                         noiseVal *= biasFactor;
+
+                        // Apply macro shape mask if enabled
+                        if (config.macroShapeEnabled && macroShapeMask) {
+                            let shapeMask = sampleMacroShape(x, y);
+                            // Blend noise with shape mask based on strength
+                            let strength = config.macroShapeStrength;
+                            noiseVal =
+                                noiseVal * (1 - strength) +
+                                shapeMask * strength;
+                        }
 
                         let densityThreshold = 1 - config.density;
                         let clusterMod = map(
@@ -893,189 +1212,380 @@
                     });
 
                     x += charWidth;
-                    if (x > width - 100) {
+                    if (x > canvasWidth - 100) {
                         x = 50;
                         y += lineHeight;
                     }
-                    if (y > height - 50) break;
+                    if (y > canvasHeight - 50) break;
                 }
                 return positions;
             }
 
-            function drawCharacters() {
-                fill(0);
-                noStroke();
+            function drawCharactersToLayer(layer) {
+                layer.fill(0);
+                layer.noStroke();
+                layer.textFont("Special Elite");
                 for (let p of glitchPositions) {
-                    push();
-                    translate(p.x, p.y);
-                    textSize(p.size);
-                    fill(0, p.opacity);
-                    textAlign(CENTER, CENTER);
-                    text(p.char, 0, 0);
-                    pop();
+                    layer.push();
+                    layer.translate(p.x, p.y);
+                    layer.textSize(p.size);
+                    layer.fill(0, p.opacity);
+                    layer.textAlign(CENTER, CENTER);
+                    layer.text(p.char, 0, 0);
+                    layer.pop();
                 }
             }
 
-            function drawGhosting() {
-                fill(0, 50);
-                noStroke();
+            function drawGhostingToLayer(layer) {
+                layer.fill(0, 50);
+                layer.noStroke();
+                layer.textFont("Special Elite");
                 for (let p of glitchPositions) {
                     if (random() < 0.15) {
                         let ghostCount = floor(random(1, 4));
                         for (let i = 0; i < ghostCount; i++) {
-                            push();
-                            translate(p.x + random(-5, 5), p.y + random(-5, 5));
-                            textSize(p.size);
-                            textAlign(CENTER, CENTER);
-                            text(p.char, 0, 0);
-                            pop();
+                            layer.push();
+                            layer.translate(
+                                p.x + random(-5, 5),
+                                p.y + random(-5, 5),
+                            );
+                            layer.textSize(p.size);
+                            layer.textAlign(CENTER, CENTER);
+                            layer.text(p.char, 0, 0);
+                            layer.pop();
                         }
                     }
                 }
             }
 
-            function drawScanlines() {
-                stroke(0, random(20, 40));
-                strokeWeight(random(0.5, 1.5));
-                for (let y = 0; y < height; y += random(3, 12)) {
+            function drawScanlinesToLayer(layer) {
+                randomSeed(millis());
+                layer.stroke(0, random(20, 40));
+                layer.strokeWeight(random(0.5, 1.5));
+                for (let y = 0; y < canvasHeight; y += random(3, 12)) {
                     let x1 = random(-20, 0);
-                    let x2 = width + random(0, 20);
-                    line(x1, y, x2, y);
+                    let x2 = canvasWidth + random(0, 20);
+                    layer.line(x1, y, x2, y);
                 }
             }
 
-            function drawCompressionBlocks() {
-                noStroke();
+            function drawCompressionBlocksToLayer(layer) {
+                randomSeed(millis());
+                layer.noStroke();
                 for (let i = 0; i < 30; i++) {
-                    fill(0, random(10, 50));
-                    rect(
-                        random(width),
-                        random(height),
+                    layer.fill(0, random(10, 50));
+                    layer.rect(
+                        random(canvasWidth),
+                        random(canvasHeight),
                         random(10, 80),
                         random(5, 30),
                     );
                 }
                 for (let i = 0; i < 15; i++) {
-                    fill(255, random(100, 200));
-                    rect(
-                        random(width),
-                        random(height),
+                    layer.fill(255, random(100, 200));
+                    layer.rect(
+                        random(canvasWidth),
+                        random(canvasHeight),
                         random(5, 40),
                         random(3, 15),
                     );
                 }
             }
 
-            // --- NEW: Stains Effects ---
-            // --- NEW: Stains Effects (V8 - Softened "Melted" Toner Blasts) ---
-            function drawStains() {
-                noStroke();
-                let numStains = floor(random(3, 8)); // Low count
+            function drawStainsToLayer(layer) {
+                noiseSeed(millis()); // Randomize noise field to prevent duplicate shapes
+                layer.noStroke();
+
+                let numStains = floor(random(2, 6));
 
                 for (let i = 0; i < numStains; i++) {
-                    let w = floor(random(50, 400));
-                    let h = floor(random(100, 500));
+                    let stainType = random(["subtle", "medium", "dark"]);
 
-                    let pg = createGraphics(w, h);
+                    let placeX, placeY;
+                    let posType = random();
 
-                    // PASS 1: The Smudge (Faint Toner Dust)
+                    if (posType < 0.3) {
+                        placeX = random(0, canvasWidth * 0.25);
+                        placeY = random(0, canvasHeight * 0.2);
+                    } else if (posType < 0.6) {
+                        placeX = random(canvasWidth * 0.2, canvasWidth * 0.8);
+                        placeY = random(
+                            canvasHeight * 0.35,
+                            canvasHeight * 0.65,
+                        );
+                    } else {
+                        placeX = random(canvasWidth);
+                        placeY = random(canvasHeight);
+                    }
+
+                    let stainWidth = floor(random(150, 400));
+                    let stainHeight = floor(random(150, 450));
+
+                    let pg = createGraphics(stainWidth, stainHeight);
+
+                    let baseGray, baseAlpha;
+                    if (stainType === "subtle") {
+                        baseGray = random(200, 230);
+                        baseAlpha = random(40, 80);
+                    } else if (stainType === "medium") {
+                        baseGray = random(160, 200);
+                        baseAlpha = random(60, 110);
+                    } else {
+                        baseGray = random(120, 170);
+                        baseAlpha = random(80, 140);
+                    }
+
                     pg.loadPixels();
-                    let noiseOffsetX = random(1000);
-                    let noiseOffsetY = random(1000);
-                    let baseAlpha = random(10, 40);
+                    // Use Math.random() to ensure independence from p5 randomSeed state
+                    let noiseOffsetX = Math.random() * 100000;
+                    let noiseOffsetY = Math.random() * 100000;
 
-                    for (let y = 0; y < h; y++) {
-                        for (let x = 0; x < w; x++) {
-                            let index = (x + y * w) * 4;
-                            let nShape = noise(
-                                x * 0.05 + noiseOffsetX,
-                                y * 0.01 + noiseOffsetY,
+                    let noiseScaleCoarse = random(0.008, 0.015);
+                    let noiseScaleFine = random(0.03, 0.06);
+
+                    let dripAngle =
+                        random() < 0.7 ? random(-0.3, 0.3) : random(-0.8, 0.8);
+
+                    // Calculate random slant for top edge
+                    // Range: -60 to 60 degrees
+                    let angleDeg = random(-60, 60);
+                    let slantTan = tan(radians(angleDeg));
+                    let aspectRatio = stainWidth / stainHeight;
+
+                    for (let y = 0; y < stainHeight; y++) {
+                        for (let x = 0; x < stainWidth; x++) {
+                            let index = (x + y * stainWidth) * 4;
+
+                            let normX = x / stainWidth;
+                            let normY = y / stainHeight;
+
+                            // Reduced max width (was 0.8) to prevent clipping
+                            let widthAtY = map(normY, 0, 1, 0.4, 0.1);
+
+                            let curvature =
+                                noise(y * noiseScaleCoarse + noiseOffsetY) -
+                                0.5;
+
+                            // Reduced influence of curvature and dripAngle to keep center closer to 0.5
+                            let centerX =
+                                0.5 +
+                                curvature * 0.2 +
+                                dripAngle * normY * 0.15;
+
+                            let distFromCenterLine = abs(normX - centerX);
+
+                            let edgeNoise = noise(
+                                x * noiseScaleFine + noiseOffsetX,
+                                y * noiseScaleFine + noiseOffsetY,
                             );
 
-                            let dx = x - w / 2;
-                            let dy = y - h / 2;
-                            let distNorm =
-                                (dx * dx) / (w * w * 0.25) +
-                                (dy * dy) / (h * h * 0.25);
-                            let maskVal = nShape * (1 - distNorm * 0.5);
+                            let verticalFade = map(normY, 0, 1, 1.2, 0.3);
 
-                            if (maskVal > 0.4) {
-                                // Gray Smudge
-                                let a =
-                                    baseAlpha + noise(x * 0.1, y * 0.1) * 30;
-                                pg.pixels[index] = 30; // Dark Gray
-                                pg.pixels[index + 1] = 30;
-                                pg.pixels[index + 2] = 30;
-                                pg.pixels[index + 3] = a;
+                            // New: Organic top edge fade with Slant
+                            // Calculate slant offset based on X
+                            // normX goes 0 to 1. Center pivot at 0.5.
+                            let slantOffset =
+                                (normX - 0.5) * aspectRatio * slantTan;
+
+                            let topEdgeNoise = noise(
+                                x * 0.05 + noiseOffsetX + 1000,
+                            );
+                            let noiseComp = map(
+                                topEdgeNoise,
+                                0,
+                                1,
+                                -0.05,
+                                0.05,
+                            );
+
+                            // Base start height (e.g., 0.15 down) plus slant plus noise
+                            let topStart = 0.15 + slantOffset + noiseComp;
+
+                            let topFade = 1.0;
+                            if (normY < topStart) {
+                                topFade = 0;
+                            } else if (normY < topStart + 0.1) {
+                                topFade = map(
+                                    normY,
+                                    topStart,
+                                    topStart + 0.1,
+                                    0,
+                                    1,
+                                );
+                            }
+
+                            // Apply top fade to verticalFade to keep logic clean?
+                            // Or apply directly to stainMask. Let's apply to verticalFade effectively.
+                            verticalFade *= topFade;
+
+                            let edgeVariation = edgeNoise * 0.3;
+                            let effectiveWidth = widthAtY + edgeVariation;
+
+                            let stainMask =
+                                (effectiveWidth - distFromCenterLine) *
+                                verticalFade;
+
+                            let tendrilNoise = noise(
+                                x * 0.02 + noiseOffsetX + 500,
+                                y * 0.04 + noiseOffsetY + 500,
+                            );
+                            if (tendrilNoise > 0.7 && normY > 0.3) {
+                                stainMask += (tendrilNoise - 0.7) * 2;
+                            }
+
+                            if (stainMask > 0.2) {
+                                let grayVariation =
+                                    noise(x * 0.08, y * 0.08) * 30 - 15;
+                                let gray = constrain(
+                                    baseGray + grayVariation,
+                                    0,
+                                    255,
+                                );
+
+                                let alphaFalloff = map(
+                                    stainMask,
+                                    0.2,
+                                    1.5,
+                                    baseAlpha * 0.2,
+                                    baseAlpha * 1.2,
+                                );
+                                alphaFalloff = constrain(alphaFalloff, 0, 255);
+
+                                pg.pixels[index] = gray;
+                                pg.pixels[index + 1] = gray;
+                                pg.pixels[index + 2] = gray;
+                                pg.pixels[index + 3] = alphaFalloff;
                             }
                         }
                     }
                     pg.updatePixels();
-                    // V8: Soften the squares into organic blobs
-                    pg.filter(BLUR, 1.2);
 
-                    // PASS 2: The Toner Blast (Micro-Grit)
-                    pg.fill(0); // SOLID BLACK
-                    pg.noStroke();
+                    pg.filter(BLUR, random(1.8, 3.2));
 
-                    // V8: Smaller grit (2-3px) for "powder" look
-                    let step = 3;
+                    if (random() < 0.7) {
+                        pg.noStroke();
 
-                    for (let y = 0; y < h; y += step) {
-                        for (let x = 0; x < w; x += step) {
-                            let nGrit = noise(
-                                x * 0.15 + noiseOffsetX,
-                                y * 0.15 + noiseOffsetY,
+                        let numDrips = floor(random(2, 5));
+                        for (let d = 0; d < numDrips; d++) {
+                            let dripX = random(
+                                stainWidth * 0.3,
+                                stainWidth * 0.7,
+                            );
+                            let dripStartY = random(
+                                stainHeight * 0.1,
+                                stainHeight * 0.4,
+                            );
+                            let dripLength = random(
+                                stainHeight * 0.3,
+                                stainHeight * 0.7,
                             );
 
-                            let nShape = noise(
-                                x * 0.05 + noiseOffsetX,
-                                y * 0.01 + noiseOffsetY,
+                            pg.stroke(
+                                baseGray - random(20, 50),
+                                random(20, 60),
                             );
-                            let dx = x - w / 2;
-                            let dy = y - h / 2;
-                            let distNorm =
-                                (dx * dx) / (w * w * 0.25) +
-                                (dy * dy) / (h * h * 0.25);
-                            let maskVal = nShape * (1 - distNorm * 0.5);
+                            pg.strokeWeight(random(0.5, 2));
 
-                            // V8 Logic: Gaps in the grit (nGrit > 0.45)
-                            if (maskVal > 0.42 && nGrit > 0.45) {
-                                let size = random(2, 4); // 2px-4px
-                                pg.rect(
-                                    x + random(-2, 2),
-                                    y + random(-2, 2),
-                                    size,
-                                    size,
-                                );
-                            }
-
-                            // Edge Spray (Dense border)
-                            let isEdge = maskVal > 0.38 && maskVal < 0.45;
-                            if (isEdge && random() < 0.35) {
-                                pg.rect(x, y, 2, 2);
+                            for (let dy = 0; dy < dripLength; dy += 2) {
+                                let wobble = noise(dy * 0.1) * 4 - 2;
+                                let y1 = dripStartY + dy;
+                                let y2 = dripStartY + dy + 2;
+                                if (y2 < stainHeight) {
+                                    pg.line(
+                                        dripX + wobble,
+                                        y1,
+                                        dripX + wobble,
+                                        y2,
+                                    );
+                                }
                             }
                         }
+
+                        pg.noStroke();
+                        let numSpots = floor(random(4, 10));
+                        for (let s = 0; s < numSpots; s++) {
+                            let spotX = random(
+                                stainWidth * 0.25,
+                                stainWidth * 0.75,
+                            );
+                            let spotY = random(
+                                stainHeight * 0.1,
+                                stainHeight * 0.6,
+                            );
+                            let spotSize = random(2, 12);
+                            let spotGray = baseGray - random(30, 60);
+                            pg.fill(spotGray, random(30, 90));
+                            pg.ellipse(
+                                spotX,
+                                spotY,
+                                spotSize,
+                                spotSize * random(0.8, 1.5),
+                            );
+                        }
+
+                        pg.filter(BLUR, 1.2);
                     }
 
-                    // Place the stain patch
-                    let placeX = random(width);
-                    // Bias: Middle or Edges
-                    if (random() < 0.3) placeX = width / 2 + random(-200, 200);
-
-                    let placeY = random(height);
-                    image(pg, placeX - w / 2, placeY - h / 2);
+                    layer.image(
+                        pg,
+                        placeX - stainWidth / 2,
+                        placeY - stainHeight / 2,
+                    );
                     pg.remove();
+                }
+
+                if (random() < 0.4) {
+                    let numStreaks = floor(random(1, 3));
+                    for (let s = 0; s < numStreaks; s++) {
+                        let streakY = random(canvasHeight);
+                        let streakWidth = random(
+                            canvasWidth * 0.3,
+                            canvasWidth * 0.9,
+                        );
+                        let streakHeight = random(8, 30);
+
+                        let streakPg = createGraphics(
+                            floor(streakWidth),
+                            floor(streakHeight),
+                        );
+                        streakPg.loadPixels();
+
+                        let streakNoise = random(1000);
+                        for (let y = 0; y < streakHeight; y++) {
+                            for (let x = 0; x < streakWidth; x++) {
+                                let index = (x + y * floor(streakWidth)) * 4;
+                                let n = noise(x * 0.02 + streakNoise, y * 0.1);
+
+                                if (n > 0.4) {
+                                    let gray = random(180, 220);
+                                    let alpha = random(20, 50);
+                                    streakPg.pixels[index] = gray;
+                                    streakPg.pixels[index + 1] = gray;
+                                    streakPg.pixels[index + 2] = gray;
+                                    streakPg.pixels[index + 3] = alpha;
+                                }
+                            }
+                        }
+                        streakPg.updatePixels();
+                        streakPg.filter(BLUR, 2);
+
+                        layer.image(
+                            streakPg,
+                            random(canvasWidth * 0.1, canvasWidth * 0.3),
+                            streakY,
+                        );
+                        streakPg.remove();
+                    }
                 }
             }
 
-            // --- NEW: Horizontal Lines ---
-            function drawHorizontalLines() {
-                fill(0);
-                noStroke();
-                textSize(config.baseFontSize);
+            function drawHorizontalLinesToLayer(layer) {
+                randomSeed(millis());
+                layer.fill(0);
+                layer.noStroke();
+                layer.textSize(config.baseFontSize);
+                layer.textFont("Special Elite");
 
-                // Select Char Pool for Lines
                 let pool = "";
                 switch (config.horizLinesCharSet) {
                     case "walls":
@@ -1094,17 +1604,15 @@
                         pool = charSets.walls;
                 }
 
-                // Density controls count
                 let numLines = floor(
                     map(config.horizLinesDensity, 0, 1, 1, 50),
                 );
 
                 for (let i = 0; i < numLines; i++) {
-                    let y = random(10, height - 10);
+                    let y = random(10, canvasHeight - 10);
                     let char = randomChar(pool);
 
-                    // Length control
-                    let maxChars = width / (config.baseFontSize * 0.6);
+                    let maxChars = canvasWidth / (config.baseFontSize * 0.6);
                     let lineLengthPercent = map(
                         config.horizLinesLength,
                         0,
@@ -1119,42 +1627,22 @@
                     let lineStr = "";
                     for (let k = 0; k < lineLen; k++) lineStr += char;
 
-                    fill(0, random(150, 255));
+                    layer.fill(0, random(150, 255));
 
-                    // Random horizontal placement logic
                     if (lineLen > maxChars * 0.9) {
-                        // Full width-ish
-                        textAlign(CENTER, CENTER);
-                        text(lineStr, width / 2, y);
+                        layer.textAlign(CENTER, CENTER);
+                        layer.text(lineStr, canvasWidth / 2, y);
                     } else {
-                        // Random placement
                         let startX = random(
                             0,
-                            width - lineLen * config.baseFontSize * 0.6,
+                            canvasWidth - lineLen * config.baseFontSize * 0.6,
                         );
-                        textAlign(LEFT, CENTER);
-                        text(lineStr, startX, y);
+                        layer.textAlign(LEFT, CENTER);
+                        layer.text(lineStr, startX, y);
                     }
                 }
             }
 
-            function drawBackgroundNoise() {
-                loadPixels();
-                // Increase probability slightly if it's too subtle, or darken it
-                for (let i = 0; i < pixels.length; i += 4) {
-                    if (random() < 0.03) {
-                        // 3% of pixels
-                        let shade = random(150, 230); // Darker noise spots
-                        pixels[i] = shade;
-                        pixels[i + 1] = shade;
-                        pixels[i + 2] = shade;
-                        // pixels[i+3] is alpha, leave 255
-                    }
-                }
-                updatePixels();
-            }
-
-            // Helper: pool
             function getActiveCharPool() {
                 let pool = "";
                 if (config.charSets.latin) pool += charSets.latin;
@@ -1170,7 +1658,41 @@
             }
 
             window.updateConfig = function () {
-                // 1. Basic Sliders
+                // Track if we need to regenerate specific layers
+                let needCharacterRegen = false;
+                let needHorizLinesRegen = false;
+
+                // Character settings - check if they changed
+                let oldDensity = config.density;
+                let oldCorruption = config.corruptionLevel;
+                let oldFontSize = config.baseFontSize;
+                let oldSizeVar = config.sizeVariation;
+                let oldRepHoriz = config.repetitionHoriz;
+                let oldRepVert = config.repetitionVert;
+                let oldRepDiag = config.repetitionDiag;
+                let oldRepLength = config.repetitionLength;
+                let oldDrift = config.positionDrift;
+                let oldCluster = config.clusterStrength;
+                let oldEdgeBias = config.edgeBias;
+                let oldCharSets = { ...config.charSets };
+                let oldUseSource = config.useSourceDoc;
+                let oldSourceText = config.sourceText;
+
+                // Horizontal lines settings
+                let oldHorizDensity = config.horizLinesDensity;
+                let oldHorizLength = config.horizLinesLength;
+                let oldHorizCharSet = config.horizLinesCharSet;
+
+                // Macro shape settings
+                let oldMacroEnabled = config.macroShapeEnabled;
+                let oldMacroChar = config.macroShapeChar;
+                let oldMacroMode = config.macroShapeMode;
+                let oldMacroSize = config.macroShapeSize;
+                let oldMacroStrength = config.macroShapeStrength;
+                let oldMacroX = config.macroShapeX;
+                let oldMacroY = config.macroShapeY;
+
+                // Update config
                 config.density = document.getElementById("density").value / 100;
                 config.corruptionLevel =
                     document.getElementById("corruption").value / 100;
@@ -1197,7 +1719,6 @@
                 config.edgeBias =
                     document.getElementById("edgebias").value / 100;
 
-                // 2. New Horizontal Line Controls
                 config.horizLinesDensity =
                     document.getElementById("horiz-density").value / 100;
                 config.horizLinesLength =
@@ -1205,7 +1726,22 @@
                 config.horizLinesCharSet =
                     document.getElementById("horiz-charset").value;
 
-                // 3. Effects Checkboxes
+                // Macro shape config
+                config.macroShapeEnabled =
+                    document.getElementById("macro-shape-enable").checked;
+                config.macroShapeChar =
+                    document.getElementById("macro-shape-char").value;
+                config.macroShapeMode =
+                    document.getElementById("macro-shape-mode").value;
+                config.macroShapeSize =
+                    document.getElementById("macro-shape-size").value / 100;
+                config.macroShapeStrength =
+                    document.getElementById("macro-shape-strength").value / 100;
+                config.macroShapeX =
+                    document.getElementById("macro-shape-x").value / 100;
+                config.macroShapeY =
+                    document.getElementById("macro-shape-y").value / 100;
+
                 config.effects.horizLines =
                     document.getElementById("effect-horiz-lines").checked;
                 config.effects.stains =
@@ -1219,7 +1755,6 @@
                 config.effects.blocks =
                     document.getElementById("effect-blocks").checked;
 
-                // 4. Update Displays
                 document.getElementById("density-val").textContent =
                     document.getElementById("density").value + "%";
                 document.getElementById("corruption-val").textContent =
@@ -1248,7 +1783,15 @@
                 document.getElementById("horiz-length-val").textContent =
                     document.getElementById("horiz-length").value + "%";
 
-                // 5. Char sets
+                document.getElementById("macro-size-val").textContent =
+                    document.getElementById("macro-shape-size").value + "%";
+                document.getElementById("macro-strength-val").textContent =
+                    document.getElementById("macro-shape-strength").value + "%";
+                document.getElementById("macro-x-val").textContent =
+                    document.getElementById("macro-shape-x").value + "%";
+                document.getElementById("macro-y-val").textContent =
+                    document.getElementById("macro-shape-y").value + "%";
+
                 config.charSets.latin =
                     document.getElementById("set-latin").checked;
                 config.charSets.numbers =
@@ -1268,13 +1811,64 @@
                 config.charSets.customChars =
                     document.getElementById("custom-chars").value;
 
-                // 6. Source
                 config.useSourceDoc =
                     document.getElementById("use-source").checked;
                 config.sourceText =
                     document.getElementById("source-text").value;
 
-                regenerate();
+                // Check if character-related settings changed
+                if (
+                    oldDensity !== config.density ||
+                    oldCorruption !== config.corruptionLevel ||
+                    oldFontSize !== config.baseFontSize ||
+                    oldSizeVar !== config.sizeVariation ||
+                    oldRepHoriz !== config.repetitionHoriz ||
+                    oldRepVert !== config.repetitionVert ||
+                    oldRepDiag !== config.repetitionDiag ||
+                    oldRepLength !== config.repetitionLength ||
+                    oldDrift !== config.positionDrift ||
+                    oldCluster !== config.clusterStrength ||
+                    oldEdgeBias !== config.edgeBias ||
+                    oldUseSource !== config.useSourceDoc ||
+                    oldSourceText !== config.sourceText ||
+                    oldCharSets.latin !== config.charSets.latin ||
+                    oldCharSets.numbers !== config.charSets.numbers ||
+                    oldCharSets.symbols !== config.charSets.symbols ||
+                    oldCharSets.cyrillic !== config.charSets.cyrillic ||
+                    oldCharSets.special !== config.charSets.special ||
+                    oldCharSets.corruption !== config.charSets.corruption ||
+                    oldCharSets.walls !== config.charSets.walls ||
+                    oldCharSets.custom !== config.charSets.custom ||
+                    oldCharSets.customChars !== config.charSets.customChars ||
+                    oldMacroEnabled !== config.macroShapeEnabled ||
+                    oldMacroChar !== config.macroShapeChar ||
+                    oldMacroMode !== config.macroShapeMode ||
+                    oldMacroSize !== config.macroShapeSize ||
+                    oldMacroStrength !== config.macroShapeStrength ||
+                    oldMacroX !== config.macroShapeX ||
+                    oldMacroY !== config.macroShapeY
+                ) {
+                    needCharacterRegen = true;
+                }
+
+                // Check if horizontal lines settings changed
+                if (
+                    oldHorizDensity !== config.horizLinesDensity ||
+                    oldHorizLength !== config.horizLinesLength ||
+                    oldHorizCharSet !== config.horizLinesCharSet
+                ) {
+                    needHorizLinesRegen = true;
+                }
+
+                // Regenerate affected layers
+                if (needCharacterRegen) {
+                    regenerateCharacters();
+                } else if (needHorizLinesRegen) {
+                    regenerateHorizLines();
+                } else {
+                    // Just recomposite if only effect toggles changed
+                    compositeImage();
+                }
             };
 
             function saveImage() {
@@ -1294,6 +1888,10 @@
                     "edgebias",
                     "horiz-density",
                     "horiz-length",
+                    "macro-shape-x",
+                    "macro-shape-y",
+                    "macro-shape-size",
+                    "macro-shape-strength",
                 ];
                 for (let id of ids)
                     document.getElementById(id).value = floor(random(10, 90));
@@ -1305,7 +1903,6 @@
                     random(2, 6),
                 );
 
-                // Randomize some char sets
                 document.getElementById("set-walls").checked = random() > 0.5;
                 document.getElementById("set-corruption").checked =
                     random() > 0.5;
@@ -1313,7 +1910,6 @@
                 document.getElementById("set-numbers").checked = random() > 0.5;
                 document.getElementById("set-symbols").checked = random() > 0.5;
 
-                // Randomize effects
                 document.getElementById("effect-scanlines").checked =
                     random() > 0.5;
                 document.getElementById("effect-ghosting").checked =
@@ -1327,7 +1923,6 @@
                 document.getElementById("effect-noise").checked =
                     random() > 0.5;
 
-                // Randomize horizontal line charset
                 const charSetOptions = [
                     "walls",
                     "corruption",
@@ -1336,180 +1931,6 @@
                 ];
                 document.getElementById("horiz-charset").value =
                     random(charSetOptions);
-
-                updateConfig();
-            }
-
-            function loadPreset(presetName) {
-                const presets = {
-                    scan: {
-                        density: 35,
-                        corruption: 60,
-                        repHoriz: 30,
-                        repVert: 15,
-                        repDiag: 10,
-                        replength: 3,
-                        sizevar: 30,
-                        cluster: 20,
-                        drift: 40,
-                        edgebias: 50,
-                        fontsize: 11,
-                        scanlines: true,
-                        ghosting: false,
-                        blocks: true,
-                        horizLines: false,
-                        stains: false,
-                        noise: true,
-                        horizLinesDensity: 50,
-                        horizLinesLength: 50,
-                        horizLinesCharSet: "walls",
-                    },
-                    fax: {
-                        density: 50,
-                        corruption: 80,
-                        repHoriz: 40,
-                        repVert: 40,
-                        repDiag: 30,
-                        replength: 4,
-                        sizevar: 20,
-                        cluster: 60,
-                        drift: 70,
-                        edgebias: 80,
-                        fontsize: 10,
-                        scanlines: true,
-                        ghosting: true,
-                        blocks: false,
-                        horizLines: true,
-                        stains: true,
-                        noise: true,
-                        horizLinesDensity: 80,
-                        horizLinesLength: 80,
-                        horizLinesCharSet: "corruption",
-                    },
-                    thermal: {
-                        density: 40,
-                        corruption: 50,
-                        repHoriz: 10,
-                        repVert: 20,
-                        repDiag: 5,
-                        replength: 3,
-                        sizevar: 40,
-                        cluster: 30,
-                        drift: 20,
-                        edgebias: 20,
-                        fontsize: 9,
-                        scanlines: false,
-                        ghosting: true,
-                        blocks: true,
-                        horizLines: false,
-                        stains: false,
-                        noise: false,
-                        horizLinesDensity: 30,
-                        horizLinesLength: 30,
-                        horizLinesCharSet: "latin",
-                    },
-                    ocr: {
-                        density: 60,
-                        corruption: 90,
-                        repHoriz: 15,
-                        repVert: 10,
-                        repDiag: 5,
-                        replength: 2,
-                        sizevar: 60,
-                        cluster: 10,
-                        drift: 80,
-                        edgebias: 50,
-                        fontsize: 12,
-                        scanlines: false,
-                        ghosting: false,
-                        blocks: false,
-                        horizLines: false,
-                        stains: false,
-                        noise: true,
-                        horizLinesDensity: 50,
-                        horizLinesLength: 50,
-                        horizLinesCharSet: "mixed",
-                    },
-                    heavy: {
-                        density: 70,
-                        corruption: 95,
-                        repHoriz: 50,
-                        repVert: 50,
-                        repDiag: 50,
-                        replength: 6,
-                        sizevar: 80,
-                        cluster: 70,
-                        drift: 90,
-                        edgebias: 50,
-                        fontsize: 14,
-                        scanlines: true,
-                        ghosting: true,
-                        blocks: true,
-                        horizLines: true,
-                        stains: true,
-                        noise: true,
-                        horizLinesDensity: 90,
-                        horizLinesLength: 90,
-                        horizLinesCharSet: "walls",
-                    },
-                    subtle: {
-                        density: 20,
-                        corruption: 30,
-                        repHoriz: 5,
-                        repVert: 8,
-                        repDiag: 3,
-                        replength: 2,
-                        sizevar: 20,
-                        cluster: 40,
-                        drift: 25,
-                        edgebias: 50,
-                        fontsize: 10,
-                        scanlines: false,
-                        ghosting: false,
-                        blocks: false,
-                        horizLines: false,
-                        stains: false,
-                        noise: true,
-                        horizLinesDensity: 20,
-                        horizLinesLength: 20,
-                        horizLinesCharSet: "latin",
-                    },
-                };
-
-                const preset = presets[presetName];
-                if (!preset) return;
-
-                document.getElementById("density").value = preset.density;
-                document.getElementById("corruption").value = preset.corruption;
-                document.getElementById("rep-horiz").value = preset.repHoriz;
-                document.getElementById("rep-vert").value = preset.repVert;
-                document.getElementById("rep-diag").value = preset.repDiag;
-                document.getElementById("replength").value = preset.replength;
-                document.getElementById("sizevar").value = preset.sizevar;
-                document.getElementById("cluster").value = preset.cluster;
-                document.getElementById("drift").value = preset.drift;
-                document.getElementById("edgebias").value =
-                    preset.edgebias || 50;
-                document.getElementById("fontsize").value = preset.fontsize;
-
-                document.getElementById("horiz-density").value =
-                    preset.horizLinesDensity;
-                document.getElementById("horiz-length").value =
-                    preset.horizLinesLength;
-                document.getElementById("horiz-charset").value =
-                    preset.horizLinesCharSet;
-
-                document.getElementById("effect-scanlines").checked =
-                    preset.scanlines;
-                document.getElementById("effect-ghosting").checked =
-                    preset.ghosting;
-                document.getElementById("effect-blocks").checked =
-                    preset.blocks;
-                document.getElementById("effect-horiz-lines").checked =
-                    preset.horizLines;
-                document.getElementById("effect-stains").checked =
-                    preset.stains;
-                document.getElementById("effect-noise").checked = preset.noise;
 
                 updateConfig();
             }
