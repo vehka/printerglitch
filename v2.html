@@ -1051,7 +1051,7 @@
                     placeY = random(canvasHeight);
                 }
 
-                let stainWidth = floor(random(60, 200));
+                let stainWidth = floor(random(150, 400));
                 let stainHeight = floor(random(150, 450));
 
                 let pg = createGraphics(stainWidth, stainHeight);
@@ -1069,7 +1069,6 @@
                 }
 
                 pg.loadPixels();
-                pg.loadPixels();
                 // Use Math.random() to ensure independence from p5 randomSeed state
                 let noiseOffsetX = Math.random() * 100000;
                 let noiseOffsetY = Math.random() * 100000;
@@ -1082,6 +1081,12 @@
                         ? random(-0.3, 0.3)
                         : random(-0.8, 0.8);
 
+                // Calculate random slant for top edge
+                // Range: -60 to 60 degrees
+                let angleDeg = random(-60, 60);
+                let slantTan = tan(radians(angleDeg));
+                let aspectRatio = stainWidth / stainHeight;
+
                 for (let y = 0; y < stainHeight; y++) {
                     for (let x = 0; x < stainWidth; x++) {
                         let index = (x + y * stainWidth) * 4;
@@ -1089,13 +1094,16 @@
                         let normX = x / stainWidth;
                         let normY = y / stainHeight;
 
-                        let widthAtY = map(normY, 0, 1, 0.8, 0.2);
+                        // Reduced max width (was 0.8) to prevent clipping
+                        let widthAtY = map(normY, 0, 1, 0.4, 0.1);
 
                         let curvature =
                             noise(y * noiseScaleCoarse + noiseOffsetY) -
                             0.5;
+
+                        // Reduced influence of curvature and dripAngle to keep center closer to 0.5
                         let centerX =
-                            0.5 + curvature * 0.4 + dripAngle * normY * 0.3;
+                            0.5 + curvature * 0.2 + dripAngle * normY * 0.15;
 
                         let distFromCenterLine = abs(normX - centerX);
 
@@ -1106,9 +1114,16 @@
 
                         let verticalFade = map(normY, 0, 1, 1.2, 0.3);
 
-                        // New: Organic top edge fade
+                        // New: Organic top edge fade with Slant
+                        // Calculate slant offset based on X
+                        // normX goes 0 to 1. Center pivot at 0.5.
+                        let slantOffset = (normX - 0.5) * aspectRatio * slantTan;
+
                         let topEdgeNoise = noise(x * 0.05 + noiseOffsetX + 1000);
-                        let topStart = map(topEdgeNoise, 0, 1, 0.0, 0.2); // Start anywhere in top 20%
+                        let noiseComp = map(topEdgeNoise, 0, 1, -0.05, 0.05);
+
+                        // Base start height (e.g., 0.15 down) plus slant plus noise
+                        let topStart = 0.15 + slantOffset + noiseComp;
 
                         let topFade = 1.0;
                         if (normY < topStart) {
