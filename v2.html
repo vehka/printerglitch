@@ -258,23 +258,21 @@
                     ">
                 <label>
                     Shape Character:
-                    <input type="text" id="macro-shape-char" value="O" maxlength="3" oninput="updateConfig()" style="
-                                width: 100%;
-                                margin-top: 5px;
-                                background: #333;
-                                border: 1px solid #555;
-                                color: white;
-                                padding: 4px;
-                                font-size: 24px;
-                                text-align: center;
-                            " />
+                    <input type="text" id="macro-shape-char" value="A" maxlength="20" oninput="updateConfig()"
+                        style="width: 100px; font-family: 'Special Elite'; text-transform: uppercase;" />
                 </label>
-                <label style="margin-top: 10px">
+                <label>
                     Mode:
-                    <select id="macro-shape-mode" onchange="updateConfig()" style="width: 100%; margin-top: 5px">
-                        <option value="normal">Normal (form shape)</option>
-                        <option value="inverse">Inverse (background)</option>
+                    <select id="macro-shape-mode" onchange="updateConfig()">
+                        <option value="normal">Normal (Dark Shape)</option>
+                        <option value="inverse">Inverse (Light Shape)</option>
                     </select>
+                </label>
+                <label>
+                    Mask Strength
+                    <span class="value-display" id="macro-strength-val">100%</span>
+                    <input type="range" id="macro-shape-strength" min="0" max="100" value="100"
+                        oninput="updateConfig()" />
                 </label>
                 <label>
                     Shape Size
@@ -282,10 +280,14 @@
                     <input type="range" id="macro-shape-size" min="20" max="100" value="80" oninput="updateConfig()" />
                 </label>
                 <label>
-                    Shape Strength
-                    <span class="value-display" id="macro-strength-val">80%</span>
-                    <input type="range" id="macro-shape-strength" min="0" max="100" value="80"
-                        oninput="updateConfig()" />
+                    Pos X
+                    <span class="value-display" id="macro-x-val">0%</span>
+                    <input type="range" id="macro-shape-x" min="0" max="100" value="0" oninput="updateConfig()" />
+                </label>
+                <label>
+                    Pos Y
+                    <span class="value-display" id="macro-y-val">0%</span>
+                    <input type="range" id="macro-shape-y" min="0" max="100" value="0" oninput="updateConfig()" />
                 </label>
             </div>
         </div>
@@ -450,10 +452,12 @@
 
             // Macro Shape Settings
             macroShapeEnabled: false,
-            macroShapeChar: "O",
+            macroShapeChar: "A",
             macroShapeMode: "normal",
             macroShapeSize: 0.8,
-            macroShapeStrength: 0.8,
+            macroShapeStrength: 1.0,
+            macroShapeX: 0.0,
+            macroShapeY: 0.0,
 
             charSets: {
                 latin: true,
@@ -695,21 +699,30 @@
             macroShapeMask.background(255);
             macroShapeMask.fill(0);
             macroShapeMask.noStroke();
-            macroShapeMask.textAlign(CENTER, CENTER);
+
             macroShapeMask.textFont("Special Elite");
 
-            // Calculate font size to fit the shape
-            // Size 100% = edge-to-edge, Size 1% = 1% of that
-            // Multiply by ~1.4 to compensate for font metrics (baseline, ascender/descender spacing)
+            // Calculate font size.
+            // If text is long, user may need to reduce size manually.
             let targetSize = min(canvasWidth, canvasHeight) * config.macroShapeSize;
-            let shapeSize = targetSize * 1.4;
-            macroShapeMask.textSize(shapeSize);
+            macroShapeMask.textSize(targetSize);
 
-            // Draw the macro shape character
+            let x = canvasWidth * (config.macroShapeX || 0);
+            let y = canvasHeight * (config.macroShapeY || 0);
+            let w = canvasWidth - x; // Fill remaining width
+            let h = canvasHeight - y; // Fill remaining height
+
+            // If user selects 0,0 (default), box is full canvas.
+            // We use CENTER, CENTER to center the text in that box.
+            macroShapeMask.textAlign(CENTER, CENTER);
+
+            // Draw the macro shape character(s) with word wrapping
             macroShapeMask.text(
                 config.macroShapeChar,
-                canvasWidth / 2,
-                canvasHeight / 2
+                x,
+                y,
+                w,
+                h
             );
 
             // Load pixels for sampling
@@ -1353,6 +1366,8 @@
             let oldMacroMode = config.macroShapeMode;
             let oldMacroSize = config.macroShapeSize;
             let oldMacroStrength = config.macroShapeStrength;
+            let oldMacroX = config.macroShapeX;
+            let oldMacroY = config.macroShapeY;
 
             // Update config
             config.density = document.getElementById("density").value / 100;
@@ -1399,6 +1414,10 @@
                 document.getElementById("macro-shape-size").value / 100;
             config.macroShapeStrength =
                 document.getElementById("macro-shape-strength").value / 100;
+            config.macroShapeX =
+                document.getElementById("macro-shape-x").value / 100;
+            config.macroShapeY =
+                document.getElementById("macro-shape-y").value / 100;
 
             config.effects.horizLines =
                 document.getElementById("effect-horiz-lines").checked;
@@ -1445,6 +1464,10 @@
                 document.getElementById("macro-shape-size").value + "%";
             document.getElementById("macro-strength-val").textContent =
                 document.getElementById("macro-shape-strength").value + "%";
+            document.getElementById("macro-x-val").textContent =
+                document.getElementById("macro-shape-x").value + "%";
+            document.getElementById("macro-y-val").textContent =
+                document.getElementById("macro-shape-y").value + "%";
 
             config.charSets.latin =
                 document.getElementById("set-latin").checked;
@@ -1497,7 +1520,9 @@
                 oldMacroChar !== config.macroShapeChar ||
                 oldMacroMode !== config.macroShapeMode ||
                 oldMacroSize !== config.macroShapeSize ||
-                oldMacroStrength !== config.macroShapeStrength) {
+                oldMacroStrength !== config.macroShapeStrength ||
+                oldMacroX !== config.macroShapeX ||
+                oldMacroY !== config.macroShapeY) {
                 needCharacterRegen = true;
             }
 
@@ -1536,6 +1561,10 @@
                 "edgebias",
                 "horiz-density",
                 "horiz-length",
+                "macro-shape-x",
+                "macro-shape-y",
+                "macro-shape-size",
+                "macro-shape-strength",
             ];
             for (let id of ids)
                 document.getElementById(id).value = floor(random(10, 90));
